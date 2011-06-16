@@ -7,6 +7,7 @@
 #include <pwm.h>
 #include <math.h>
 
+
 /////*CONFIGURATION*/////
 #pragma config FOSC = HS
 #pragma config FCMEN = ON
@@ -131,7 +132,7 @@ void main (void)
     ADCON0  = 0b00000000;
     ADCON1  = 0b00001111;
     WDTCON  = 0 ;
-    OSCCON  = 0b01111100; /* Oscillateur externe. */
+    OSCCON  = 0b01111100;
     UCON    = 0 ;           /* Désactive l'USB. */
     UCFG    = 0b00001000 ;
     TRISC   = 0b11111000 ;
