@@ -1,0 +1,3 @@
+Warning[2066] main.c 100 : type qualifier mismatch in assignment
+Warning[2066] main.c 148 : type qualifier mismatch in assignment
+Warning[2066] main.c 235 : type qualifier mismatch in assignment
