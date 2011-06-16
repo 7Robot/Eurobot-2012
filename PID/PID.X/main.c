@@ -44,6 +44,7 @@ void high_isr(void);
 void low_isr(void);
 void setDC(int dc);
 void setPresc(int ticks);
+void writeFloat(float f);
 
 /////*VARIABLES GLOBALES*/////
 int t0init = 0;
@@ -108,12 +109,11 @@ void low_isr(void)
      if(PIE1bits.RCIE && PIR1bits.RCIF)
      {
          char x;
-
          x = ReadUSART();
+
          if(x=='v')
          {
-            printf("P:%d I:%d D:%d v:%d e:%d\n",Perreur,Ierreur,Derreur,vitesse,erreur);
-
+            printf("P:%d I:%d D:%d v:%d e:%d\n",Perreur,Ierreur,Derreur,vitesse,erreur);          
          }
          if(x=='e')
          {
@@ -149,7 +149,7 @@ void main (void)
 
     /* Module USART pour remontée d'infos. */
     OpenUSART( USART_TX_INT_OFF &USART_RX_INT_ON & USART_ASYNCH_MODE
-                & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_HIGH, 8 );//51 //103
+                & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_HIGH, 103 );//51 //103
     IPR1bits.RCIP=0 ;
 
     /* Configuration du PWM1 */
@@ -247,6 +247,19 @@ void setPresc(int ticks)
     T0CON = masque | pre ;
     
     calcdt();
+}
+void writeFloat(float f)
+{
+    /* Envoie le float non formaté sur la liaison serie. */
+    char tab[4],k;
+    char * p = &f;
+    tab[4]='\0'; /* Pour la fonction putsUSART*/
+    for(k=0;k<=3;k++)
+    {
+        tab[k]=*p;
+        p++;
+    }
+    putsUSART(tab);
 }
 
 

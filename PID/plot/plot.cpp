@@ -15,6 +15,7 @@ using namespace std;
 
 int mesure(FILE *,int tsec,int pps);
 FILE * creerFichier(FILE *);
+float getFloat(unsigned char * buff);
 
 
 int main()
@@ -24,7 +25,7 @@ int main()
 	/* Création du fichier de données. */
 	data = creerFichier(data);
 	
-	mesure(data,1,100);
+	mesure(data,10,1);
 	
 	
 	fclose(data);
@@ -68,9 +69,9 @@ int mesure(FILE * data,int tsec,int pps)
 	unsigned char * pBuff = buff;
 	int nbytes=0;
 	
-	
+
 	/* Ouverture du port série. */
-	if(OpenComport(pic,57600)){printf("Erreur d'ouverture du port. \n"); return -1;}
+	if(OpenComport(pic,9600)){printf("Erreur d'ouverture du port. \n"); return -1;}
 	else printf("Port serie ouvert.\n");
 	PollComport(pic, buff, buffSize); /* On vide le buffer en prévention. */
 	
@@ -91,11 +92,19 @@ int mesure(FILE * data,int tsec,int pps)
 		
 		else 
 		{
-			printf("%d bytes : %s\n",nbytes,buff);
-		    fprintf(data, "%d   %s\n",t*1000/pps,buff);
+		    printf("%d bytes : %s\n",nbytes,buff);
+			fprintf(data, "%d   %s\n",t*1000/pps,buff);
 		}
 	}
 	fprintf(data, "\n#### Fin du fichier ####\n");
 
 	return 0;
+}
+
+float getFloat(unsigned char * buff)
+{
+	/* Convertir 4 bytes en un float */
+	float * pf;
+	pf = (float*) buff;
+    return *pf;
 }
