@@ -1,2 +1,2 @@
-Warning[2066] main.c 116 : type qualifier mismatch in assignment
-Warning[2066] main.c 162 : type qualifier mismatch in assignment
+Warning[2066] main.c 114 : type qualifier mismatch in assignment
+Warning[2066] main.c 161 : type qualifier mismatch in assignment

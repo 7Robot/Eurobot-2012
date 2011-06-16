@@ -5,6 +5,7 @@
 #include <portb.h>
 #include <usart.h>
 #include <pwm.h>
+#include <math.h>
 
 /////*CONFIGURATION*/////
 #pragma config FOSC = HS
@@ -28,8 +29,8 @@
 #define chA PORTBbits.RB0
 #define chB PORTAbits.RA0
 
-#define Kd 100
-#define Kp 1
+#define Kd 0
+#define Kp 50
 #define Ki 1
 
 #define ticksMin 20
@@ -46,7 +47,7 @@ void setPresc(int ticks);
 /////*VARIABLES GLOBALES*/////
 int t0init = 0;
 int i=0, rounds=0;
-int vitesse=0, erreur=0, lastErreur=0, consigne=0, Derreur=0, Ierreur=0;
+int vitesse=0, erreur=0, lastErreur=0, consigne=0, Derreur=0, Ierreur=0, Perreur=0;
 
 long tempdt;
 unsigned int dt;
@@ -88,18 +89,15 @@ void low_isr(void)
 
     if(INTCONbits.TMR0IE && INTCONbits.TMR0IF)
     {
+        vitesse = ticks;
+        erreur = consigne - vitesse;
+     
+        Perreur = Kp*erreur;
+        Derreur = (Kd*(erreur - lastErreur));
+        Ierreur = Ierreur + Ki*erreur;
 
-        vitesse = (100*ticks)/dt;
-
-        erreur = Kp*(vitesse - consigne);
-        Derreur = (Kd*(erreur - lastErreur))/dt;
-        Ierreur = Ierreur + Ki*dt*erreur;
-
-        SetDC()
-
-       //setDC(1000);
-
-       
+        setDC(Perreur + Derreur + Ierreur);
+        
         
         ticks = 0;
         lastErreur = erreur;
@@ -113,7 +111,8 @@ void low_isr(void)
          x = ReadUSART();
          if(x=='v')
          {
-             printf("D:%d P:%d I:%d\n",Derreur,erreur,Ierreur);
+            printf("P:%d I:%d D:%d v:%d e:%d\n",Perreur,Ierreur,Derreur,vitesse,erreur);
+
          }
          if(x=='e')
          {
@@ -140,7 +139,7 @@ void main (void)
     TRISB   = 0b01111111 ;
 
     /* Interruption Timer0 */
-    OpenTimer0(TIMER_INT_ON & T0_SOURCE_INT & T0_8BIT & T0_PS_1_64);
+    OpenTimer0(TIMER_INT_ON & T0_SOURCE_INT & T0_8BIT & T0_PS_1_128);
     calcdt();
     INTCON2bits.TMR0IP = 0;
 
@@ -167,7 +166,7 @@ void main (void)
     INTCONbits.PEIE = 1; /*Autorise interruptions bas niveau. */
 
     while(1);
-}²
+}
 
 
 /////*FONCTIONS*/////
