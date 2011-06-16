@@ -28,6 +28,10 @@
 #define chA PORTBbits.RB0
 #define chB PORTAbits.RA0
 
+#define Kd 100
+#define Kp 1
+#define Ki 1
+
 #define ticksMin 20
 #define XTAL 8000000
 #define TCY 4.0*1000/XTAL /* Durée d'un cycle d'horloge en µs. */
@@ -41,13 +45,15 @@ void setPresc(int ticks);
 
 /////*VARIABLES GLOBALES*/////
 int t0init = 0;
-int i=0, usart=0;
+int i=0, rounds=0;
+int vitesse=0, erreur=0, lastErreur=0, consigne=0, Derreur=0, Ierreur=0;
 
 long tempdt;
 unsigned int dt;
 int ticks = 0;
 
-double vitesse =0;
+char test;
+
 /////*INTERRUPTIONS*/////
 
 #pragma code high_vector=0x08
@@ -83,31 +89,38 @@ void low_isr(void)
     if(INTCONbits.TMR0IE && INTCONbits.TMR0IF)
     {
 
-        int vitesse, erreur ;
-
         vitesse = (100*ticks)/dt;
+
+        erreur = Kp*(vitesse - consigne);
+        Derreur = (Kd*(erreur - lastErreur))/dt;
+        Ierreur = Ierreur + Ki*dt*erreur;
+
+        SetDC()
+
+       //setDC(1000);
+
+       
         
-        erreur = vitesse - 200;
-
-
-
-
-        setDC(-erreur);
-
-        if(usart == 100)
-        {
-            //printf("%d ticks en %d ms \n",ticks,dt);
-            printf("vitesse = %d\n", vitesse);
-        }
-        if(usart >= 200)
-        {
-            setPresc(ticks);
-            usart = 0;
-        }
-        usart++;
         ticks = 0;
+        lastErreur = erreur;
         INTCONbits.TMR0IF = 0;
     }
+
+     if(PIE1bits.RCIE && PIR1bits.RCIF)
+     {
+         char x;
+
+         x = ReadUSART();
+         if(x=='v')
+         {
+             printf("D:%d P:%d I:%d\n",Derreur,erreur,Ierreur);
+         }
+         if(x=='e')
+         {
+             consigne=0;
+         }
+     }
+
 }
 
 
@@ -135,14 +148,15 @@ void main (void)
     OpenRB0INT( PORTB_CHANGE_INT_ON & RISING_EDGE_INT & PORTB_PULLUPS_OFF);
 
     /* Module USART pour remontée d'infos. */
-    OpenUSART( USART_TX_INT_OFF &USART_RX_INT_OFF & USART_ASYNCH_MODE
-                & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_HIGH, 51 ); //103
+    OpenUSART( USART_TX_INT_OFF &USART_RX_INT_ON & USART_ASYNCH_MODE
+                & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_HIGH, 8 );//51 //103
+    IPR1bits.RCIP=0 ;
 
     /* Configuration du PWM1 */
     OpenTimer2(TIMER_INT_OFF & T2_PS_1_1 & T2_POST_1_1);
     OpenPWM1(0xF0);
     OpenPWM2(0xF0);
-    SetDCPWM1(800);
+    SetDCPWM1(0);
     SetDCPWM2(0);
 
     printf("Demarrage du programme !\n");
@@ -153,7 +167,7 @@ void main (void)
     INTCONbits.PEIE = 1; /*Autorise interruptions bas niveau. */
 
     while(1);
-}
+}²
 
 
 /////*FONCTIONS*/////
@@ -231,8 +245,6 @@ void setPresc(int ticks)
 
     masque = T0CON & 0b11111000 ;
     T0CON = masque | pre ;
-
-    printf("pre = %d \n",pre);
     
     calcdt();
 }
