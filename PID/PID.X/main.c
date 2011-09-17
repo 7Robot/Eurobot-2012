@@ -26,7 +26,6 @@
 #pragma config PLLDIV = 4
 
 #define led PORTCbits.RC0
-#define osc PORTBbits.RB7
 #define chA PORTBbits.RB0
 #define chB PORTAbits.RA0
 
@@ -34,28 +33,19 @@
 #define Kp 50
 #define Ki 1
 
-#define ticksMin 20
 #define XTAL 8000000
 #define TCY 4.0*1000/XTAL /* Durée d'un cycle d'horloge en µs. */
 
 /////*PROTOTYPES*/////
-void calcdt(void);
 void high_isr(void);
 void low_isr(void);
 void setDC(int dc);
-void setPresc(int ticks);
-void writeFloat(float f);
 
 /////*VARIABLES GLOBALES*/////
-int t0init = 0;
-int i=0, rounds=0;
-int vitesse=0, erreur=0, lastErreur=0, consigne=0, Derreur=0, Ierreur=0, Perreur=0;
 
-long tempdt;
-unsigned int dt;
-int ticks = 0;
-
-char test;
+unsigned int chrono = 0;
+char chronoON = 0;
+int tick = 0;
 
 /////*INTERRUPTIONS*/////
 
@@ -77,11 +67,16 @@ void high_isr(void)
   
     if(INTCONbits.INT0IE && INTCONbits.INT0IF)
     {
-        if(chB) ticks--;
-        else ticks++;
+        if(chronoON) /* On releve sa valeur et on le reinitialise. */
+        {
+            chrono = ReadTimer0();
+            chronoON = 0; /* Il faudra attendre un tour pour le relancer. */
+        }
+        else chronoON = 1;
+        
+        WriteTimer0(0);
         INTCONbits.INT0IF = 0;
     }
-
 }
 
 #pragma interrupt low_isr
@@ -91,19 +86,9 @@ void low_isr(void)
 
     if(INTCONbits.TMR0IE && INTCONbits.TMR0IF)
     {
-        vitesse = ticks;
-        erreur = consigne - vitesse;
-     
-        Perreur = Kp*erreur;
-        Derreur = (Kd*(erreur - lastErreur));
-        Ierreur = Ierreur + Ki*erreur;
-
-        setDC(Perreur + Derreur + Ierreur);
-        
-        
-        ticks = 0;
-        lastErreur = erreur;
+        printf("Le timer a debordé\n");
         INTCONbits.TMR0IF = 0;
+        WriteTimer0(0);
     }
 
      if(PIE1bits.RCIE && PIR1bits.RCIF)
@@ -113,12 +98,10 @@ void low_isr(void)
 
          if(x=='v')
          {
-            printf("P:%d I:%d D:%d v:%d e:%d\n",Perreur,Ierreur,Derreur,vitesse,erreur);          
+            printf("chrono : %d\n", chrono);
          }
-         if(x=='e')
-         {
-             consigne=0;
-         }
+         
+         PIR1bits.RCIF = 0;
      }
 
 }
@@ -128,7 +111,7 @@ void low_isr(void)
 void main (void)
 {
 //initialisations
-    CMCON   =  0b00000111; /* Désactive les comparateurs. */
+     CMCON   =  0b00000111; /* Désactive les comparateurs. */
     ADCON0  = 0b00000000;
     ADCON1  = 0b00001111;
     WDTCON  = 0 ;
@@ -140,16 +123,15 @@ void main (void)
     TRISB   = 0b01111111 ;
 
     /* Interruption Timer0 */
-    OpenTimer0(TIMER_INT_ON & T0_SOURCE_INT & T0_8BIT & T0_PS_1_128);
-    calcdt();
+    OpenTimer0(TIMER_INT_ON & T0_SOURCE_INT & T0_16BIT & T0_PS_1_1);
     INTCON2bits.TMR0IP = 0;
 
     /* Interruption RB0. */
     OpenRB0INT( PORTB_CHANGE_INT_ON & RISING_EDGE_INT & PORTB_PULLUPS_OFF);
 
     /* Module USART pour remontée d'infos. */
-    OpenUSART( USART_TX_INT_OFF &USART_RX_INT_ON & USART_ASYNCH_MODE
-                & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_HIGH, 103 );//51 //103
+    OpenUSART( USART_TX_INT_OFF & USART_RX_INT_ON & USART_ASYNCH_MODE
+                & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_HIGH, 51 );//51 //103
     IPR1bits.RCIP=0 ;
 
     /* Configuration du PWM1 */
@@ -166,33 +148,13 @@ void main (void)
     INTCONbits.GIE = 1; /* Autorise interruptions haut niveau. */
     INTCONbits.PEIE = 1; /*Autorise interruptions bas niveau. */
 
+    setDC(1023);
+    
     while(1);
 }
 
 
 /////*FONCTIONS*/////
-
-void calcdt(void)
-{
-    /* Renvoie le temps entre deux debordements du timer 0. */
-    char presc;
-    dt = 0;
-    tempdt = 0;
-
-    if(T0CONbits.T08BIT) tempdt = 256 - t0init ;
-    else tempdt = 0xFFFF - t0init ;
-
-    if(!T0CONbits.PSA) /* Si prescaler assigné. */
-    {
-        presc = T0CON & 0b00000111;
-        while(presc >= 0)
-        {
-         tempdt = 2*tempdt;
-         presc--;
-        }
-    }
-    dt = tempdt*TCY;
-}
 
 void setDC(int dc)
 {
@@ -210,56 +172,3 @@ void setDC(int dc)
     if(dc <= 1023) SetDCPWM1(dc);
     else SetDCPWM1(1023);
 }
-
-void setPresc(int ticks)
-{
-    char masque, pre;
-
-    pre = T0CON & 0b00000111;
-
-    if(ticks < 0) ticks = - ticks ;
-
-    if(ticks >= ticksMin) /* On diminue la fréquence pour augmenter la résolution. */
-    {
-        if(T0CONbits.PSA == 0 & pre == 0) /* PSA = 0 si prescaler activé */
-        {
-            T0CONbits.PSA = 1;
-        }
-        else if(T0CONbits.PSA == 0)
-        {
-            pre--;
-        }
-    }
-    else
-    {
-        if(T0CONbits.PSA == 1)
-        {
-            T0CONbits.PSA = 0;
-            pre = 0;
-        }
-        else if(T0CONbits.PSA == 0 & pre < 7)
-        {
-            pre ++;
-        }
-    }
-
-    masque = T0CON & 0b11111000 ;
-    T0CON = masque | pre ;
-    
-    calcdt();
-}
-void writeFloat(float f)
-{
-    /* Envoie le float non formaté sur la liaison serie. */
-    char tab[4],k;
-    char * p = &f;
-    tab[4]='\0'; /* Pour la fonction putsUSART*/
-    for(k=0;k<=3;k++)
-    {
-        tab[k]=*p;
-        p++;
-    }
-    putsUSART(tab);
-}
-
-
