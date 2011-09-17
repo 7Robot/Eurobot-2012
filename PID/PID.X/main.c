@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <p18f2550.h>
 #include <timers.h>
+#include <delays.h>
 #include <portb.h>
 #include <usart.h>
 #include <pwm.h>
@@ -26,8 +27,11 @@
 #pragma config PLLDIV = 4
 
 #define led PORTCbits.RC0
-#define chA PORTBbits.RB0
-#define chB PORTAbits.RA0
+#define GchA PORTBbits.RB0
+#define GchB PORTAbits.RA0
+#define DchA PORTBbits.RB1
+#define DchB PORTAbits.RA1
+
 
 #define Kd 0
 #define Kp 50
@@ -39,13 +43,14 @@
 /////*PROTOTYPES*/////
 void high_isr(void);
 void low_isr(void);
-void setDC(int dc);
+void GsetDC(int dc);
+void DsetDC(int dc);
 
 /////*VARIABLES GLOBALES*/////
 
-unsigned int chrono = 0;
-char chronoON = 0;
-int tick = 0;
+int chrono = 0, v=0,Dvitesse = 0 , k=0;
+char chronoON = 0, sens=1, i=0 ;
+float Gvitesse = 0;
 
 /////*INTERRUPTIONS*/////
 
@@ -67,16 +72,96 @@ void high_isr(void)
   
     if(INTCONbits.INT0IE && INTCONbits.INT0IF)
     {
-        if(chronoON) /* On releve sa valeur et on le reinitialise. */
+       if(chronoON) /* On releve sa valeur et on le reinitialise. */
         {
-            chrono = ReadTimer0();
+            if(i<=2)
+            {
+                Gvitesse=0 ;
+                INTCONbits.TMR0IF = 0;
+            }
+            if(i>2)
+            {
+                Gvitesse = Gvitesse + ReadTimer0();
+            }
+            if(i>5)
+            {
+                Gvitesse = sens*4.0*1000/(Gvitesse*TCY) ; /*Ticks par  ms*/
+                INTCONbits.INT0IE = 0 ; /* Fin de la mesure. */
+                if(!T0CONbits.PSA) /* Si prescaler. */
+                {
+                    T0CONbits.PSA = 1; /* On le coupe. */
+                    Gvitesse = Gvitesse/2;
+                }
+                i = 0;
+            }
+            if(INTCONbits.TMR0IF && i>2)
+            {
+                Gvitesse = 0 ;
+                if(T0CONbits.PSA) /* Si pas de prescaler. */
+                {
+                    OpenTimer0(T0_PS_1_2);
+                    INTCONbits.INT0E = 1 ; /* On refais une mesure. */
+                    i = 0;
+                    INTCONbits.TMR0IF = 0;
+                }
+                
+            }
+
             chronoON = 0; /* Il faudra attendre un tour pour le relancer. */
+            i++;
+
         }
-        else chronoON = 1;
-        
-        WriteTimer0(0);
+        else
+        {
+            chronoON = 1;
+            if(GchB) sens = 1;
+            else sens = -1;
+        }
+
+         WriteTimer0(0);
         INTCONbits.INT0IF = 0;
     }
+
+    if(INTCON3bits.INT1IE && INTCON3bits.INT1IF)
+    {
+        if(chronoON) /* On releve sa valeur et on le reinitialise. */
+        {
+            if(i<=2) Dvitesse=0 ;
+            if(i>2)
+            {
+                Dvitesse = Dvitesse + sens*ReadTimer0()/4;
+
+            }
+            chronoON = 0; /* Il faudra attendre un tour pour le relancer. */
+            i++;
+            if(i>6)
+            {
+                INTCON3bits.INT1IE = 0 ;
+                i = 0;
+            }
+        }
+        else
+        {
+            chronoON = 1;
+            if(DchB) sens = 1;
+            else sens = -1;
+        }
+       
+         WriteTimer0(0);
+
+        INTCON3bits.INT1IF = 0;
+    }
+    
+  /*  if(INTCONbits.TMR0IE && INTCONbits.TMR0IF)
+    {
+        if(INTCONbits.INT0IE && i>2) Cas ou on considere que la vitesse est nulle.
+        {
+            printf("Le timer a debordé\n");
+        }
+        INTCONbits.TMR0IF = 0;
+        WriteTimer0(0);
+    }*/
+
 }
 
 #pragma interrupt low_isr
@@ -84,21 +169,36 @@ void low_isr(void)
 {
     led = led^1;
 
-    if(INTCONbits.TMR0IE && INTCONbits.TMR0IF)
-    {
-        printf("Le timer a debordé\n");
-        INTCONbits.TMR0IF = 0;
-        WriteTimer0(0);
-    }
 
      if(PIE1bits.RCIE && PIR1bits.RCIF)
      {
          char x;
          x = ReadUSART();
 
+         if(x=='g')
+         {
+             printf("Mesure Gauche...\n");
+             INTCONbits.INT0IE = 1;
+         }
+        if(x=='d')
+         {
+            printf("Mesure Droite...\n");
+            INTCON3bits.INT1IE = 1;
+         }
          if(x=='v')
          {
-            printf("chrono : %d\n", chrono);
+             if(Gvitesse)
+             {
+                 v = Gvitesse;
+                 printf("Gauche : %d   ", v);
+                 Gvitesse = 0;
+             }
+             if(Dvitesse)
+             {
+                 printf("Droite : %d", Dvitesse);
+                 Dvitesse =0;
+             }
+             printf("\n");
          }
          
          PIR1bits.RCIF = 0;
@@ -119,15 +219,19 @@ void main (void)
     UCON    = 0 ;           /* Désactive l'USB. */
     UCFG    = 0b00001000 ;
     TRISC   = 0b11111000 ;
-    TRISA   = 0b11110011 ;
+    TRISA   = 0b11000011 ;
     TRISB   = 0b01111111 ;
 
     /* Interruption Timer0 */
-    OpenTimer0(TIMER_INT_ON & T0_SOURCE_INT & T0_16BIT & T0_PS_1_1);
-    INTCON2bits.TMR0IP = 0;
+    OpenTimer0(TIMER_INT_OFF & T0_SOURCE_INT & T0_16BIT & T0_PS_1_1);
+    INTCON2bits.TMR0IP = 1;
 
     /* Interruption RB0. */
     OpenRB0INT( PORTB_CHANGE_INT_ON & RISING_EDGE_INT & PORTB_PULLUPS_OFF);
+
+    /* Interruption RB0. */
+    OpenRB1INT( PORTB_CHANGE_INT_ON & RISING_EDGE_INT & PORTB_PULLUPS_OFF);
+    INTCON3bits.INT1IP = 1 ; /* Haute priorite. */
 
     /* Module USART pour remontée d'infos. */
     OpenUSART( USART_TX_INT_OFF & USART_RX_INT_ON & USART_ASYNCH_MODE
@@ -148,15 +252,35 @@ void main (void)
     INTCONbits.GIE = 1; /* Autorise interruptions haut niveau. */
     INTCONbits.PEIE = 1; /*Autorise interruptions bas niveau. */
 
-    setDC(1023);
-    
-    while(1);
+    INTCONbits.INT0E = 0;
+    INTCON3bits.INT1IE = 0;
+
+
+    GsetDC(50);
+    k=-1020;
+    while(1)
+    {
+        
+        INTCONbits.INT0IE=1;
+        Delay10KTCYx(20);
+        v = Gvitesse;
+        printf("Gauche : %d \n", v);
+        Gvitesse = 0;
+       /* GsetDC(k);
+        Delay10KTCYx(10);
+        INTCONbits.INT0IE=1;
+        Delay10KTCYx(10);
+        v = Gvitesse ;
+        printf("%d %d\n",k,v);
+        k=k+10;
+        while(k>1020) k=1024 ;*/
+    }
 }
 
 
 /////*FONCTIONS*/////
 
-void setDC(int dc)
+void GsetDC(int dc)
 {
     if(dc >= 0)
     {
@@ -171,4 +295,21 @@ void setDC(int dc)
     }
     if(dc <= 1023) SetDCPWM1(dc);
     else SetDCPWM1(1023);
+}
+
+void DsetDC(int dc)
+{
+    if(dc >= 0)
+    {
+        PORTAbits.RA4 = 0;
+        PORTAbits.RA5 = 1;
+    }
+    else
+    {
+        PORTAbits.RA4 = 1;
+        PORTAbits.RA5 = 0;
+        dc = -dc;
+    }
+    if(dc <= 1023) SetDCPWM2(dc);
+    else SetDCPWM2(1023);
 }
