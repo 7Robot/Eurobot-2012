@@ -35,7 +35,7 @@
 #define TRMIN 2
 #define TRMAX 4
 #define Kd 0
-#define Kp 50
+#define Kp 2
 #define Ki 1
 
 #define XTAL 8000000
@@ -50,7 +50,9 @@ void DsetDC(int dc);
 /////*VARIABLES GLOBALES*/////
 
 
-int  k=0, v=0;
+int  k=0, v=0, tps=0;
+int Gconsigne = 0, Gerreur=0, GlastErreur=0;
+int GPerreur=0, GDerreur=0, GIerreur=0, Gpwm=0;
 long cyclesTimer = 0;
 char chronoON = 0, tour=0, sens=1, err=0 ;
 float Gvitesse = 0, Dvitesse =0;
@@ -99,7 +101,9 @@ void high_isr(void)
                     Gvitesse = 60000000/Gvitesse ;
                     if(sens == -1) Gvitesse = -Gvitesse ;
                     INTCONbits.INT0IE = 0;
+                    INTCON3bits.INT1IE = 1;
                     tour = 0;
+                    tps = ReadTimer1();
                 }
             }
         }
@@ -130,8 +134,6 @@ void high_isr(void)
                 if(INTCONbits.TMR0IF) err = 1 ; /* Test débordement juste avant mesure. */
                 if(tour >= TRMAX)
                 {
-                   // Gvitesse = sens*16*64*(TRMAX - TRMIN);
-                   // Gvitesse = Gvitesse/(cyclesTimer*TCY);
                     Dvitesse = cyclesTimer*2*TCY ; /* Durée entre N cycles en us. */
                     Dvitesse = Dvitesse/(TRMAX - TRMIN) ; /* Moyenne entre deux cycles. */
                     Dvitesse = Dvitesse*6; /* Durée d'un tour moteur. */
@@ -155,11 +157,11 @@ void high_isr(void)
     {
         if(INTCONbits.INT0IE || INTCON3bits.INT1IE || err)
         {
+           if(INTCONbits.INT0IE) Gvitesse = 0;
+           if(INTCON3bits.INT1IE) Dvitesse = 0;
            INTCONbits.INT0IE = 0;
            INTCON3bits.INT1IE = 0;
            err = 0;
-           Gvitesse = 0;
-           Dvitesse = 0;
         }
         INTCONbits.TMR0IF = 0;
         WriteTimer0(0);
@@ -190,9 +192,7 @@ void low_isr(void)
          }
         if(x=='t')
          {
-            k = k+10;
-            GsetDC(k);
-            printf("pwm = %d\n",k);
+            printf("T1 = %d\n",tps);
             INTCON3bits.INT1IE = 1;
          }
          if(x=='v')
@@ -236,6 +236,10 @@ void main (void)
     OpenTimer0(TIMER_INT_ON & T0_SOURCE_INT & T0_16BIT & T0_PS_1_4);
     INTCON2bits.TMR0IP = 1;
 
+    /* Configuration Timer1. */
+    OpenTimer1(TIMER_INT_OFF & T1_16BIT_RW & T1_SOURCE_INT & T1_PS_1_1
+                & T1_OSC1EN_OFF & T1_SYNC_EXT_OFF);
+
     /* Interruption RB0. */
     OpenRB0INT( PORTB_CHANGE_INT_ON & RISING_EDGE_INT & PORTB_PULLUPS_OFF);
 
@@ -265,25 +269,39 @@ void main (void)
     INTCONbits.INT0E = 0;
     INTCON3bits.INT1IE = 0;
 
-
-    GsetDC(100);
-    DsetDC(100);
+  
+    GsetDC(-1000);
+    Delay10KTCYx(255);
+    Gconsigne = 500;
+    
     while(1)
     {
+        WriteTimer1(0);
+        INTCONbits.INT0IE = 1;
+        Delay10KTCYx(1);
+       /*v = Gvitesse;
+        printf("g : %d ",v);
+        v = Dvitesse;
+        printf("d : %d en %d\n", v, tps);
+*/
+        /* PID */
+        Gerreur = Gconsigne - Gvitesse;
+
+        GPerreur = (Kp*Gerreur)/100;
+        GDerreur = Kd*(Gerreur - GlastErreur);
+        GIerreur = GIerreur + (Ki*Gerreur)/100;
+
+        Gpwm = GPerreur + GDerreur + GIerreur ;
+
+        GsetDC(Gpwm);
+        printf("Gpwm : %d erreur : %d\n", Gpwm, Gerreur*100);
+        led = led^1;
+        
+
+
+
+
        
-       /* INTCONbits.INT0IE=1;
-        Delay10KTCYx(100);
-        v = Gvitesse;
-        printf("Gauche : %d \n", v);
-        Gvitesse = 0;
-       /* GsetDC(k);
-        Delay10KTCYx(10);
-        INTCONbits.INT0IE=1;
-        Delay10KTCYx(10);
-        v = Gvitesse ;
-        printf("%d %d\n",k,v);
-        k=k+10;
-        while(k>1020) k=1024 ;*/
     }
 }
 
