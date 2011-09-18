@@ -32,13 +32,14 @@
 #define DchA PORTBbits.RB1
 #define DchB PORTAbits.RA1
 
-
+#define TRMIN 2
+#define TRMAX 4
 #define Kd 0
 #define Kp 50
 #define Ki 1
 
 #define XTAL 8000000
-#define TCY 4.0*1000/XTAL /* Durée d'un cycle d'horloge en µs. */
+#define TCY 4.0*1000000/XTAL /* Durée d'un cycle d'horloge en µs. */
 
 /////*PROTOTYPES*/////
 void high_isr(void);
@@ -48,9 +49,11 @@ void DsetDC(int dc);
 
 /////*VARIABLES GLOBALES*/////
 
-int chrono = 0, v=0,Dvitesse = 0 , k=0;
-char chronoON = 0, sens=1, i=0 ;
-float Gvitesse = 0;
+
+int  k=0, v=0;
+long cyclesTimer = 0;
+char chronoON = 0, tour=0, sens=1, err=0 ;
+float Gvitesse = 0, Dvitesse =0;
 
 /////*INTERRUPTIONS*/////
 
@@ -72,95 +75,95 @@ void high_isr(void)
   
     if(INTCONbits.INT0IE && INTCONbits.INT0IF)
     {
-       if(chronoON) /* On releve sa valeur et on le reinitialise. */
+        if(chronoON) /* Si chrono comptait. */
         {
-            if(i<=2)
+            tour++;
+            if(tour <= TRMIN) /* Mesures foireuses non comptabilisées. */
             {
-                Gvitesse=0 ;
+                cyclesTimer = 0;
                 INTCONbits.TMR0IF = 0;
+                if(GchB) sens = 1;
+                else sens = -1;
             }
-            if(i>2)
+            else
             {
-                Gvitesse = Gvitesse + ReadTimer0();
-            }
-            if(i>5)
-            {
-                Gvitesse = sens*4.0*1000/(Gvitesse*TCY) ; /*Ticks par  ms*/
-                INTCONbits.INT0IE = 0 ; /* Fin de la mesure. */
-                if(!T0CONbits.PSA) /* Si prescaler. */
+                cyclesTimer = cyclesTimer + ReadTimer0();
+                if(INTCONbits.TMR0IF) err = 1 ; /* Test débordement juste avant mesure. */
+                if(tour >= TRMAX)
                 {
-                    T0CONbits.PSA = 1; /* On le coupe. */
-                    Gvitesse = Gvitesse/2;
+                   // Gvitesse = sens*16*64*(TRMAX - TRMIN);
+                   // Gvitesse = Gvitesse/(cyclesTimer*TCY);
+                    Gvitesse = cyclesTimer*2*TCY ; /* Durée entre N cycles en us. */
+                    Gvitesse = Gvitesse/(TRMAX - TRMIN) ; /* Moyenne entre deux cycles. */
+                    Gvitesse = Gvitesse*6; /* Durée d'un tour moteur. */
+                    Gvitesse = 60000000/Gvitesse ;
+                    if(sens == -1) Gvitesse = -Gvitesse ;
+                    INTCONbits.INT0IE = 0;
+                    tour = 0;
                 }
-                i = 0;
             }
-            if(INTCONbits.TMR0IF && i>2)
-            {
-                Gvitesse = 0 ;
-                if(T0CONbits.PSA) /* Si pas de prescaler. */
-                {
-                    OpenTimer0(T0_PS_1_2);
-                    INTCONbits.INT0E = 1 ; /* On refais une mesure. */
-                    i = 0;
-                    INTCONbits.TMR0IF = 0;
-                }
-                
-            }
-
-            chronoON = 0; /* Il faudra attendre un tour pour le relancer. */
-            i++;
-
         }
         else
         {
             chronoON = 1;
-            if(GchB) sens = 1;
-            else sens = -1;
         }
 
-         WriteTimer0(0);
+        WriteTimer0(0);
         INTCONbits.INT0IF = 0;
     }
 
     if(INTCON3bits.INT1IE && INTCON3bits.INT1IF)
     {
-        if(chronoON) /* On releve sa valeur et on le reinitialise. */
+        if(chronoON) /* Si chrono comptait. */
         {
-            if(i<=2) Dvitesse=0 ;
-            if(i>2)
+            tour++;
+            if(tour <= TRMIN) /* Mesures foireuses non comptabilisées. */
             {
-                Dvitesse = Dvitesse + sens*ReadTimer0()/4;
-
+                cyclesTimer = 0;
+                INTCONbits.TMR0IF = 0;
+                if(DchB) sens = 1;
+                else sens = -1;
             }
-            chronoON = 0; /* Il faudra attendre un tour pour le relancer. */
-            i++;
-            if(i>6)
+            else
             {
-                INTCON3bits.INT1IE = 0 ;
-                i = 0;
+                cyclesTimer = cyclesTimer + ReadTimer0();
+                if(INTCONbits.TMR0IF) err = 1 ; /* Test débordement juste avant mesure. */
+                if(tour >= TRMAX)
+                {
+                   // Gvitesse = sens*16*64*(TRMAX - TRMIN);
+                   // Gvitesse = Gvitesse/(cyclesTimer*TCY);
+                    Dvitesse = cyclesTimer*2*TCY ; /* Durée entre N cycles en us. */
+                    Dvitesse = Dvitesse/(TRMAX - TRMIN) ; /* Moyenne entre deux cycles. */
+                    Dvitesse = Dvitesse*6; /* Durée d'un tour moteur. */
+                    Dvitesse = 60000000/Dvitesse ;
+                    if(sens == -1) Dvitesse = -Dvitesse ; /* Foireux sinon... */
+                    INTCON3bits.INT1IE = 0;
+                    tour = 0;
+                }
             }
         }
         else
         {
             chronoON = 1;
-            if(DchB) sens = 1;
-            else sens = -1;
         }
-       
-         WriteTimer0(0);
 
+        WriteTimer0(0);
         INTCON3bits.INT1IF = 0;
-    }
-    
-  /*  if(INTCONbits.TMR0IE && INTCONbits.TMR0IF)
+}
+
+    if(INTCONbits.TMR0IE && INTCONbits.TMR0IF)
     {
-        if(INTCONbits.INT0IE && i>2) Cas ou on considere que la vitesse est nulle.
+        if(INTCONbits.INT0IE || INTCON3bits.INT1IE || err)
         {
-            printf("Le timer a debordé\n");
+           INTCONbits.INT0IE = 0;
+           INTCON3bits.INT1IE = 0;
+           err = 0;
+           Gvitesse = 0;
+           Dvitesse = 0;
         }
         INTCONbits.TMR0IF = 0;
         WriteTimer0(0);
-    }*/
+    }
 
 }
 
@@ -183,6 +186,13 @@ void low_isr(void)
         if(x=='d')
          {
             printf("Mesure Droite...\n");
+            INTCON3bits.INT1IE = 1;
+         }
+        if(x=='t')
+         {
+            k = k+10;
+            GsetDC(k);
+            printf("pwm = %d\n",k);
             INTCON3bits.INT1IE = 1;
          }
          if(x=='v')
@@ -223,7 +233,7 @@ void main (void)
     TRISB   = 0b01111111 ;
 
     /* Interruption Timer0 */
-    OpenTimer0(TIMER_INT_OFF & T0_SOURCE_INT & T0_16BIT & T0_PS_1_1);
+    OpenTimer0(TIMER_INT_ON & T0_SOURCE_INT & T0_16BIT & T0_PS_1_4);
     INTCON2bits.TMR0IP = 1;
 
     /* Interruption RB0. */
@@ -256,13 +266,13 @@ void main (void)
     INTCON3bits.INT1IE = 0;
 
 
-    GsetDC(50);
-    k=-1020;
+    GsetDC(100);
+    DsetDC(100);
     while(1)
     {
-        
-        INTCONbits.INT0IE=1;
-        Delay10KTCYx(20);
+       
+       /* INTCONbits.INT0IE=1;
+        Delay10KTCYx(100);
         v = Gvitesse;
         printf("Gauche : %d \n", v);
         Gvitesse = 0;
