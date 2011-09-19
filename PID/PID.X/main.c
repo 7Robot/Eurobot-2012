@@ -33,7 +33,7 @@
 #define DchB PORTAbits.RA1
 
 #define TRMIN 2
-#define TRMAX 4
+//#define TRMAX 3
 #define Kd 0
 #define Kp 2
 #define Ki 1
@@ -46,16 +46,17 @@ void high_isr(void);
 void low_isr(void);
 void GsetDC(int dc);
 void DsetDC(int dc);
+float calcVitesse(long cyclesTimer);
 
 /////*VARIABLES GLOBALES*/////
 
-
+char TRMAX = 5 ;
 int  k=0, v=0, tps=0;
 int Gconsigne = 0, Gerreur=0, GlastErreur=0;
 int GPerreur=0, GDerreur=0, GIerreur=0, Gpwm=0;
 long cyclesTimer = 0;
 char chronoON = 0, tour=0, sens=1, err=0 ;
-float Gvitesse = 0, Dvitesse =0;
+float Gvitesse = 0, Dvitesse =0, vitesse =0;
 
 /////*INTERRUPTIONS*/////
 
@@ -77,31 +78,27 @@ void high_isr(void)
   
     if(INTCONbits.INT0IE && INTCONbits.INT0IF)
     {
+        led = 1;
         if(chronoON) /* Si chrono comptait. */
         {
             tour++;
             if(tour <= TRMIN) /* Mesures foireuses non comptabilisées. */
             {
+                WriteTimer1(0);
                 cyclesTimer = 0;
                 INTCONbits.TMR0IF = 0;
-                if(GchB) sens = 1;
-                else sens = -1;
             }
             else
             {
                 cyclesTimer = cyclesTimer + ReadTimer0();
+                if(GchB) sens = 1;
+                else sens = -1;
                 if(INTCONbits.TMR0IF) err = 1 ; /* Test débordement juste avant mesure. */
                 if(tour >= TRMAX)
                 {
-                   // Gvitesse = sens*16*64*(TRMAX - TRMIN);
-                   // Gvitesse = Gvitesse/(cyclesTimer*TCY);
-                    Gvitesse = cyclesTimer*2*TCY ; /* Durée entre N cycles en us. */
-                    Gvitesse = Gvitesse/(TRMAX - TRMIN) ; /* Moyenne entre deux cycles. */
-                    Gvitesse = Gvitesse*6; /* Durée d'un tour moteur. */
-                    Gvitesse = 60000000/Gvitesse ;
-                    if(sens == -1) Gvitesse = -Gvitesse ;
+                    Gvitesse = calcVitesse(cyclesTimer);
                     INTCONbits.INT0IE = 0;
-                    INTCON3bits.INT1IE = 1;
+                    //INTCON3bits.INT1IE = 1;
                     tour = 0;
                     tps = ReadTimer1();
                 }
@@ -113,6 +110,7 @@ void high_isr(void)
         }
 
         WriteTimer0(0);
+        led = 0 ;
         INTCONbits.INT0IF = 0;
     }
 
@@ -134,11 +132,7 @@ void high_isr(void)
                 if(INTCONbits.TMR0IF) err = 1 ; /* Test débordement juste avant mesure. */
                 if(tour >= TRMAX)
                 {
-                    Dvitesse = cyclesTimer*2*TCY ; /* Durée entre N cycles en us. */
-                    Dvitesse = Dvitesse/(TRMAX - TRMIN) ; /* Moyenne entre deux cycles. */
-                    Dvitesse = Dvitesse*6; /* Durée d'un tour moteur. */
-                    Dvitesse = 60000000/Dvitesse ;
-                    if(sens == -1) Dvitesse = -Dvitesse ; /* Foireux sinon... */
+                    Gvitesse = calcVitesse(cyclesTimer);
                     INTCON3bits.INT1IE = 0;
                     tour = 0;
                 }
@@ -153,7 +147,7 @@ void high_isr(void)
         INTCON3bits.INT1IF = 0;
 }
 
-    if(INTCONbits.TMR0IE && INTCONbits.TMR0IF)
+    if(INTCONbits.TMR0IE && INTCONbits.TMR0IF) // METTRE TIMER POUR dt constant
     {
         if(INTCONbits.INT0IE || INTCON3bits.INT1IE || err)
         {
@@ -172,7 +166,7 @@ void high_isr(void)
 #pragma interrupt low_isr
 void low_isr(void)
 {
-    led = led^1;
+    
 
 
      if(PIE1bits.RCIE && PIR1bits.RCIF)
@@ -237,7 +231,7 @@ void main (void)
     INTCON2bits.TMR0IP = 1;
 
     /* Configuration Timer1. */
-    OpenTimer1(TIMER_INT_OFF & T1_16BIT_RW & T1_SOURCE_INT & T1_PS_1_1
+    OpenTimer1(TIMER_INT_OFF & T1_16BIT_RW & T1_SOURCE_INT & T1_PS_1_4
                 & T1_OSC1EN_OFF & T1_SYNC_EXT_OFF);
 
     /* Interruption RB0. */
@@ -270,7 +264,7 @@ void main (void)
     INTCON3bits.INT1IE = 0;
 
   
-    GsetDC(-1000);
+    GsetDC(100);
     Delay10KTCYx(255);
     Gconsigne = 500;
     
@@ -278,14 +272,19 @@ void main (void)
     {
         WriteTimer1(0);
         INTCONbits.INT0IE = 1;
-        Delay10KTCYx(1);
+        //Delay10KTCYx(30);
+        v= Gvitesse ;
+        tps = tps/500 ;
+        if(tps > 11 && TRMAX > 2) TRMAX-- ;
+        if(tps < 9 && TRMAX < 13) TRMAX++ ;
+        printf("v : %d tps : %u ms\n",v,tps);
        /*v = Gvitesse;
         printf("g : %d ",v);
         v = Dvitesse;
         printf("d : %d en %d\n", v, tps);
 */
         /* PID */
-        Gerreur = Gconsigne - Gvitesse;
+      /*  Gerreur = Gconsigne - Gvitesse;
 
         GPerreur = (Kp*Gerreur)/100;
         GDerreur = Kd*(Gerreur - GlastErreur);
@@ -296,7 +295,7 @@ void main (void)
         GsetDC(Gpwm);
         printf("Gpwm : %d erreur : %d\n", Gpwm, Gerreur*100);
         led = led^1;
-        
+        */
 
 
 
@@ -340,4 +339,14 @@ void DsetDC(int dc)
     }
     if(dc <= 1023) SetDCPWM2(dc);
     else SetDCPWM2(1023);
+}
+
+float calcVitesse(long cyclesTimer)
+{
+   vitesse = cyclesTimer*2*TCY ; /* Durée entre N cycles en us. */
+   vitesse = vitesse/(TRMAX - TRMIN) ; /* Moyenne entre deux cycles. */
+   vitesse = vitesse*6.0*3.8118; /* Durée d'un tour moteur. */
+   vitesse = 60000000/vitesse ;
+   if(sens == -1) vitesse = -vitesse ;
+   return vitesse ;
 }
