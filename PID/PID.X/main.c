@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <p18f2550.h>
 #include <timers.h>
+#include <delays.h>
 #include <portb.h>
 #include <usart.h>
 #include <pwm.h>
@@ -26,36 +27,36 @@
 #pragma config PLLDIV = 4
 
 #define led PORTCbits.RC0
-#define osc PORTBbits.RB7
-#define chA PORTBbits.RB0
-#define chB PORTAbits.RA0
+#define GchA PORTBbits.RB0
+#define GchB PORTAbits.RA0
+#define DchA PORTBbits.RB1
+#define DchB PORTAbits.RA1
 
+#define TRMIN 2
+//#define TRMAX 3
 #define Kd 0
-#define Kp 50
+#define Kp 2
 #define Ki 1
 
-#define ticksMin 20
 #define XTAL 8000000
-#define TCY 4.0*1000/XTAL /* Durée d'un cycle d'horloge en µs. */
+#define TCY 4.0*1000000/XTAL /* Durée d'un cycle d'horloge en µs. */
 
 /////*PROTOTYPES*/////
-void calcdt(void);
 void high_isr(void);
 void low_isr(void);
-void setDC(int dc);
-void setPresc(int ticks);
-void writeFloat(float f);
+void GsetDC(int dc);
+void DsetDC(int dc);
+float calcVitesse(long cyclesTimer);
 
 /////*VARIABLES GLOBALES*/////
-int t0init = 0;
-int i=0, rounds=0;
-int vitesse=0, erreur=0, lastErreur=0, consigne=0, Derreur=0, Ierreur=0, Perreur=0;
 
-long tempdt;
-unsigned int dt;
-int ticks = 0;
-
-char test;
+char TRMAX = 5 ;
+int  k=0, v=0, tps=0;
+int Gconsigne = 0, Gerreur=0, GlastErreur=0;
+int GPerreur=0, GDerreur=0, GIerreur=0, Gpwm=0;
+long cyclesTimer = 0;
+char chronoON = 0, tour=0, sens=1, err=0 ;
+float Gvitesse = 0, Dvitesse =0, vitesse =0;
 
 /////*INTERRUPTIONS*/////
 
@@ -77,9 +78,87 @@ void high_isr(void)
   
     if(INTCONbits.INT0IE && INTCONbits.INT0IF)
     {
-        if(chB) ticks--;
-        else ticks++;
+        led = 1;
+        if(chronoON) /* Si chrono comptait. */
+        {
+            tour++;
+            if(tour <= TRMIN) /* Mesures foireuses non comptabilisées. */
+            {
+                WriteTimer1(0);
+                cyclesTimer = 0;
+                INTCONbits.TMR0IF = 0;
+            }
+            else
+            {
+                cyclesTimer = cyclesTimer + ReadTimer0();
+                if(GchB) sens = 1;
+                else sens = -1;
+                if(INTCONbits.TMR0IF) err = 1 ; /* Test débordement juste avant mesure. */
+                if(tour >= TRMAX)
+                {
+                    Gvitesse = calcVitesse(cyclesTimer);
+                    INTCONbits.INT0IE = 0;
+                    //INTCON3bits.INT1IE = 1;
+                    tour = 0;
+                    tps = ReadTimer1();
+                }
+            }
+        }
+        else
+        {
+            chronoON = 1;
+        }
+
+        WriteTimer0(0);
+        led = 0 ;
         INTCONbits.INT0IF = 0;
+    }
+
+    if(INTCON3bits.INT1IE && INTCON3bits.INT1IF)
+    {
+        if(chronoON) /* Si chrono comptait. */
+        {
+            tour++;
+            if(tour <= TRMIN) /* Mesures foireuses non comptabilisées. */
+            {
+                cyclesTimer = 0;
+                INTCONbits.TMR0IF = 0;
+                if(DchB) sens = 1;
+                else sens = -1;
+            }
+            else
+            {
+                cyclesTimer = cyclesTimer + ReadTimer0();
+                if(INTCONbits.TMR0IF) err = 1 ; /* Test débordement juste avant mesure. */
+                if(tour >= TRMAX)
+                {
+                    Gvitesse = calcVitesse(cyclesTimer);
+                    INTCON3bits.INT1IE = 0;
+                    tour = 0;
+                }
+            }
+        }
+        else
+        {
+            chronoON = 1;
+        }
+
+        WriteTimer0(0);
+        INTCON3bits.INT1IF = 0;
+}
+
+    if(INTCONbits.TMR0IE && INTCONbits.TMR0IF) // METTRE TIMER POUR dt constant
+    {
+        if(INTCONbits.INT0IE || INTCON3bits.INT1IE || err)
+        {
+           if(INTCONbits.INT0IE) Gvitesse = 0;
+           if(INTCON3bits.INT1IE) Dvitesse = 0;
+           INTCONbits.INT0IE = 0;
+           INTCON3bits.INT1IE = 0;
+           err = 0;
+        }
+        INTCONbits.TMR0IF = 0;
+        WriteTimer0(0);
     }
 
 }
@@ -87,38 +166,46 @@ void high_isr(void)
 #pragma interrupt low_isr
 void low_isr(void)
 {
-    led = led^1;
+    
 
-    if(INTCONbits.TMR0IE && INTCONbits.TMR0IF)
-    {
-        vitesse = ticks;
-        erreur = consigne - vitesse;
-     
-        Perreur = Kp*erreur;
-        Derreur = (Kd*(erreur - lastErreur));
-        Ierreur = Ierreur + Ki*erreur;
-
-        setDC(Perreur + Derreur + Ierreur);
-        
-        
-        ticks = 0;
-        lastErreur = erreur;
-        INTCONbits.TMR0IF = 0;
-    }
 
      if(PIE1bits.RCIE && PIR1bits.RCIF)
      {
          char x;
          x = ReadUSART();
 
+         if(x=='g')
+         {
+             printf("Mesure Gauche...\n");
+             INTCONbits.INT0IE = 1;
+         }
+        if(x=='d')
+         {
+            printf("Mesure Droite...\n");
+            INTCON3bits.INT1IE = 1;
+         }
+        if(x=='t')
+         {
+            printf("T1 = %d\n",tps);
+            INTCON3bits.INT1IE = 1;
+         }
          if(x=='v')
          {
-            printf("P:%d I:%d D:%d v:%d e:%d\n",Perreur,Ierreur,Derreur,vitesse,erreur);          
+             if(Gvitesse)
+             {
+                 v = Gvitesse;
+                 printf("Gauche : %d   ", v);
+                 Gvitesse = 0;
+             }
+             if(Dvitesse)
+             {
+                 printf("Droite : %d", Dvitesse);
+                 Dvitesse =0;
+             }
+             printf("\n");
          }
-         if(x=='e')
-         {
-             consigne=0;
-         }
+         
+         PIR1bits.RCIF = 0;
      }
 
 }
@@ -128,7 +215,7 @@ void low_isr(void)
 void main (void)
 {
 //initialisations
-    CMCON   =  0b00000111; /* Désactive les comparateurs. */
+     CMCON   =  0b00000111; /* Désactive les comparateurs. */
     ADCON0  = 0b00000000;
     ADCON1  = 0b00001111;
     WDTCON  = 0 ;
@@ -136,20 +223,27 @@ void main (void)
     UCON    = 0 ;           /* Désactive l'USB. */
     UCFG    = 0b00001000 ;
     TRISC   = 0b11111000 ;
-    TRISA   = 0b11110011 ;
+    TRISA   = 0b11000011 ;
     TRISB   = 0b01111111 ;
 
     /* Interruption Timer0 */
-    OpenTimer0(TIMER_INT_ON & T0_SOURCE_INT & T0_8BIT & T0_PS_1_128);
-    calcdt();
-    INTCON2bits.TMR0IP = 0;
+    OpenTimer0(TIMER_INT_ON & T0_SOURCE_INT & T0_16BIT & T0_PS_1_4);
+    INTCON2bits.TMR0IP = 1;
+
+    /* Configuration Timer1. */
+    OpenTimer1(TIMER_INT_OFF & T1_16BIT_RW & T1_SOURCE_INT & T1_PS_1_4
+                & T1_OSC1EN_OFF & T1_SYNC_EXT_OFF);
 
     /* Interruption RB0. */
     OpenRB0INT( PORTB_CHANGE_INT_ON & RISING_EDGE_INT & PORTB_PULLUPS_OFF);
 
+    /* Interruption RB0. */
+    OpenRB1INT( PORTB_CHANGE_INT_ON & RISING_EDGE_INT & PORTB_PULLUPS_OFF);
+    INTCON3bits.INT1IP = 1 ; /* Haute priorite. */
+
     /* Module USART pour remontée d'infos. */
-    OpenUSART( USART_TX_INT_OFF &USART_RX_INT_ON & USART_ASYNCH_MODE
-                & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_HIGH, 103 );//51 //103
+    OpenUSART( USART_TX_INT_OFF & USART_RX_INT_ON & USART_ASYNCH_MODE
+                & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_HIGH, 51 );//51 //103
     IPR1bits.RCIP=0 ;
 
     /* Configuration du PWM1 */
@@ -166,35 +260,54 @@ void main (void)
     INTCONbits.GIE = 1; /* Autorise interruptions haut niveau. */
     INTCONbits.PEIE = 1; /*Autorise interruptions bas niveau. */
 
-    while(1);
+    INTCONbits.INT0E = 0;
+    INTCON3bits.INT1IE = 0;
+
+  
+    GsetDC(100);
+    Delay10KTCYx(255);
+    Gconsigne = 500;
+    
+    while(1)
+    {
+        WriteTimer1(0);
+        INTCONbits.INT0IE = 1;
+        //Delay10KTCYx(30);
+        v= Gvitesse ;
+        tps = tps/500 ;
+        if(tps > 11 && TRMAX > 2) TRMAX-- ;
+        if(tps < 9 && TRMAX < 13) TRMAX++ ;
+        printf("v : %d tps : %u ms\n",v,tps);
+       /*v = Gvitesse;
+        printf("g : %d ",v);
+        v = Dvitesse;
+        printf("d : %d en %d\n", v, tps);
+*/
+        /* PID */
+      /*  Gerreur = Gconsigne - Gvitesse;
+
+        GPerreur = (Kp*Gerreur)/100;
+        GDerreur = Kd*(Gerreur - GlastErreur);
+        GIerreur = GIerreur + (Ki*Gerreur)/100;
+
+        Gpwm = GPerreur + GDerreur + GIerreur ;
+
+        GsetDC(Gpwm);
+        printf("Gpwm : %d erreur : %d\n", Gpwm, Gerreur*100);
+        led = led^1;
+        */
+
+
+
+
+       
+    }
 }
 
 
 /////*FONCTIONS*/////
 
-void calcdt(void)
-{
-    /* Renvoie le temps entre deux debordements du timer 0. */
-    char presc;
-    dt = 0;
-    tempdt = 0;
-
-    if(T0CONbits.T08BIT) tempdt = 256 - t0init ;
-    else tempdt = 0xFFFF - t0init ;
-
-    if(!T0CONbits.PSA) /* Si prescaler assigné. */
-    {
-        presc = T0CON & 0b00000111;
-        while(presc >= 0)
-        {
-         tempdt = 2*tempdt;
-         presc--;
-        }
-    }
-    dt = tempdt*TCY;
-}
-
-void setDC(int dc)
+void GsetDC(int dc)
 {
     if(dc >= 0)
     {
@@ -211,55 +324,29 @@ void setDC(int dc)
     else SetDCPWM1(1023);
 }
 
-void setPresc(int ticks)
+void DsetDC(int dc)
 {
-    char masque, pre;
-
-    pre = T0CON & 0b00000111;
-
-    if(ticks < 0) ticks = - ticks ;
-
-    if(ticks >= ticksMin) /* On diminue la fréquence pour augmenter la résolution. */
+    if(dc >= 0)
     {
-        if(T0CONbits.PSA == 0 & pre == 0) /* PSA = 0 si prescaler activé */
-        {
-            T0CONbits.PSA = 1;
-        }
-        else if(T0CONbits.PSA == 0)
-        {
-            pre--;
-        }
+        PORTAbits.RA4 = 0;
+        PORTAbits.RA5 = 1;
     }
     else
     {
-        if(T0CONbits.PSA == 1)
-        {
-            T0CONbits.PSA = 0;
-            pre = 0;
-        }
-        else if(T0CONbits.PSA == 0 & pre < 7)
-        {
-            pre ++;
-        }
+        PORTAbits.RA4 = 1;
+        PORTAbits.RA5 = 0;
+        dc = -dc;
     }
-
-    masque = T0CON & 0b11111000 ;
-    T0CON = masque | pre ;
-    
-    calcdt();
+    if(dc <= 1023) SetDCPWM2(dc);
+    else SetDCPWM2(1023);
 }
-void writeFloat(float f)
+
+float calcVitesse(long cyclesTimer)
 {
-    /* Envoie le float non formaté sur la liaison serie. */
-    char tab[4],k;
-    char * p = &f;
-    tab[4]='\0'; /* Pour la fonction putsUSART*/
-    for(k=0;k<=3;k++)
-    {
-        tab[k]=*p;
-        p++;
-    }
-    putsUSART(tab);
+   vitesse = cyclesTimer*2*TCY ; /* Durée entre N cycles en us. */
+   vitesse = vitesse/(TRMAX - TRMIN) ; /* Moyenne entre deux cycles. */
+   vitesse = vitesse*6.0*3.8118; /* Durée d'un tour moteur. */
+   vitesse = 60000000/vitesse ;
+   if(sens == -1) vitesse = -vitesse ;
+   return vitesse ;
 }
-
-
