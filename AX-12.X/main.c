@@ -39,27 +39,26 @@ void low_isr(void);
 /////*INTERRUPTIONS*/////
 
 #pragma code high_vector=0x08
-void high_interrupt(void)
-{
-     _asm GOTO high_isr _endasm
+
+void high_interrupt(void) {
+    _asm GOTO high_isr _endasm
 }
 #pragma code low_vector=0x18
-void low_interrupt(void)
-{
-     _asm GOTO low_isr _endasm
+
+void low_interrupt(void) {
+    _asm GOTO low_isr _endasm
 }
 #pragma code
 
 #pragma interrupt high_isr
-void high_isr(void)
-{
+
+void high_isr(void) {
 }
 
 #pragma interrupt low_isr
-void low_isr(void)
-{
-    if(INTCONbits.TMR0IE && INTCONbits.TMR0IF)
-    {
+
+void low_isr(void) {
+    if (INTCONbits.TMR0IE && INTCONbits.TMR0IF) {
         // code ici...
         INTCONbits.TMR0IF = 0;
     }
@@ -68,30 +67,28 @@ void low_isr(void)
 
 /////*PROGRAMME PRINCIPAL*/////
 
-void main (void)
-{
+void main(void) {
     AX12 ax;
     int un = 1;
-    
-    //initialisations
-    CMCON   = 0b00000111; /* Désactive les comparateurs. */
-    ADCON0  = 0b00000000;
-    ADCON1  = 0b00001111;
-    WDTCON  = 0;
-    OSCCON  = 0b01111111;
-    UCON    = 0;          /* Désactive l'USB. */
-    UCFG    = 0b00001000;
-    TRISC   = 0b11011110;
-    TRISA   = 0b11111111;
-    TRISB   = 0b11111111;
 
-    Delay10KTCYx( 200 );
-    
+    //initialisations
+    CMCON = 0b00000111; /* Désactive les comparateurs. */
+    ADCON0 = 0b00000000;
+    ADCON1 = 0b00001111;
+    WDTCON = 0;
+    OSCCON = 0b01111111;
+    UCON = 0; /* Désactive l'USB. */
+    UCFG = 0b00001000;
+    TRISC = 0b11011110;
+    TRISA = 0b11111111;
+    TRISB = 0b11111111;
+
+    Delay10KTCYx(200);
+
     SetupAX();
     ax.id = 2;
-    
-    while(1)
-    {
+
+    while (1) {
         //PutAX(ax, AX_LED, 1);
         int v = GetAX(ax, AX_PRESENT_TEMPERATURE);
         PushUSART(v);
@@ -99,6 +96,6 @@ void main (void)
         PushUSART(v);
         PushUSART(v);
         led = led ^ 1;
-        Delay10KTCYx( 200 ); //200*10 cycles d'horloge (Fcycle=Fquartz/4)
+        Delay10KTCYx(200); //200*10 cycles d'horloge (Fcycle=Fquartz/4)
     }
 }

@@ -71,7 +71,11 @@ typedef struct {
 } AX12;
 
 void SetupAX();
-
+int RegisterLenAX(byte address);
+void PushHeaderAX(AX12 ax, int len, byte inst);
+void PushBufferAX(int len, byte* buf);
+void PushUSART(byte b);
+byte PopUSART();
 
 //ne jamais retourner "error"
 byte     PingAX(AX12 ax);
@@ -82,13 +86,15 @@ byte   ActionAX(AX12 ax);
 byte    ResetAX(AX12 ax);
 // byte SyncWriteAX(AX12 ax, ...);
 
+// Shorthands
  int GetAX(AX12 ax, byte address);
 byte PutAX(AX12 ax, byte address, int value);
 
-//boolean inverse;
-/*int status_id;                                   // ID del paquete de retorno
+/*
+boolean inverse;
+
+int status_id; stupide il ne doit pas changer    // ID del paquete de retorno
 int status_error;                                // error del paquete de retorno
-int status_data;                                 // data del paquete de retornostatic void setTX();
 
 static byte ax_rx_buffer[AX12_BUFFER_SIZE];      // buffer de recepción
 static volatile byte ax_rx_Pointer;              // making these volatile keeps the compiler from optimizing loops of available()
@@ -97,14 +103,7 @@ static volatile byte ax_rx_Pointer;              // making these volatile keeps 
 static void AX12init (long baud);
 static void autoDetect (int* list_motors, byte num_motors);
 
-byte ping ();
-byte reset ();
-byte readData (byte regstart, byte reglength);
-byte writeData (byte regstart, byte reglength, int value);
-byte action ();
-byte regWrite (byte regstart, byte reglength, int value);
-byte readInfo (byte regstart);
-byte writeInfo (byte regstart, int value);
+
 void setEndlessTurnMode (boolean onoff);
 void endlessTurn (int velocidad);
 byte presentPSL (int* PSL);
@@ -112,12 +111,6 @@ byte presentPSL (int* PSL);
 static void setTX();
 static void setRX();
 static void setNone();
-static byte ax12writeB(byte data);
-static void ax12SendPacket (byte _id, byte datalength, byte instruction, byte* data);
-static byte ax12ReadPacket(int* status_id, int* status_error, int* status_data);
-
-};
-
- */
+*/
 
 #endif /* _AX12_H */
