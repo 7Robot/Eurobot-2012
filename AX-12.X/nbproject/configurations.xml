@@ -65,17 +65,16 @@
         <property key="AutoSelectMemRanges" value="auto"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="programoptions.usehighvoltageonmclr" value="false"/>
-        <property key="hwtoolclock.units" value="mips"/>
         <property key="memories.eeprom" value="false"/>
         <property key="ToolFirmwareFilePath" value=""/>
+        <property key="ToolFirmwareOption.UseLatestFirmware" value="true"/>
         <property key="programoptions.preserveprogramrange.start" value="0x0"/>
-        <property key="hwtoolclock.instructionspeed" value=""/>
         <property key="voltagevalue" value="5.0"/>
         <property key="programoptions.preserveprogramrange" value="false"/>
         <property key="programoptions.eraseb4program" value="true"/>
         <property key="memories.programmemory.start" value="0x0"/>
         <property key="memories.programmemory.end" value="0x7fff"/>
-        <property key="poweroptions.powerenable" value="false"/>
+        <property key="poweroptions.powerenable" value="true"/>
       </PICkit3PlatformTool>
     </conf>
   </confs>

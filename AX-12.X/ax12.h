@@ -70,25 +70,32 @@ typedef struct {
     byte error; // Last status returned
 } AX12;
 
+
+void SetTX();
+void SetRX();
+void PushUSART(byte b);
+byte PopUSART();
+
 void SetupAX();
 int RegisterLenAX(byte address);
 void PushHeaderAX(AX12 ax, int len, byte inst);
 void PushBufferAX(int len, byte* buf);
-void PushUSART(byte b);
-byte PopUSART();
+void PushFooterAX();
 
-//ne jamais retourner "error"
-byte     PingAX(AX12 ax);
-byte     ReadAX(AX12 ax, byte address, int len, byte* buf);
-byte    WriteAX(AX12 ax, byte address, int len, byte* buf);
-byte RegWriteAX(AX12 ax, byte address, int len, byte* buf);
-byte   ActionAX(AX12 ax);
-byte    ResetAX(AX12 ax);
+int PopHeaderAX();
+
+int     PingAX(AX12 ax);
+int     ReadAX(AX12 ax, byte address, int len, byte* buf);
+int    WriteAX(AX12 ax, byte address, int len, byte* buf);
+int RegWriteAX(AX12 ax, byte address, int len, byte* buf);
+int   ActionAX(AX12 ax);
+int    ResetAX(AX12 ax);
 // byte SyncWriteAX(AX12 ax, ...);
 
 // Shorthands
- int GetAX(AX12 ax, byte address);
-byte PutAX(AX12 ax, byte address, int value);
+int GetAX(AX12 ax, byte address);
+int PutAX(AX12 ax, byte address, int value);
+
 
 /*
 boolean inverse;
@@ -108,8 +115,6 @@ void setEndlessTurnMode (boolean onoff);
 void endlessTurn (int velocidad);
 byte presentPSL (int* PSL);
 
-static void setTX();
-static void setRX();
 static void setNone();
 */
 

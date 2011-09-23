@@ -14,18 +14,20 @@ include Makefile
 MKDIR=mkdir -p
 RM=rm -f 
 CP=cp 
+
 # Macros
 CND_CONF=default
-
 ifeq ($(TYPE_IMAGE), DEBUG_RUN)
 IMAGE_TYPE=debug
-FINAL_IMAGE=dist/${CND_CONF}/${IMAGE_TYPE}/AX12.X.${IMAGE_TYPE}.cof
+FINAL_IMAGE=dist/${CND_CONF}/${IMAGE_TYPE}/AX-12.X.${IMAGE_TYPE}.cof
 else
 IMAGE_TYPE=production
-FINAL_IMAGE=dist/${CND_CONF}/${IMAGE_TYPE}/AX12.X.${IMAGE_TYPE}.cof
+FINAL_IMAGE=dist/${CND_CONF}/${IMAGE_TYPE}/AX-12.X.${IMAGE_TYPE}.cof
 endif
+
 # Object Directory
 OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
+
 # Distribution Directory
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
@@ -38,8 +40,7 @@ ASFLAGS=
 LDLIBSOPTIONS=
 
 # Path to java used to run MPLAB X when this makefile was created
-MP_JAVA_PATH=/usr/lib/jvm/ia32-java-6-sun-1.6.0.26/jre/bin/
-OS_ORIGINAL="Linux"
+MP_JAVA_PATH=/usr/lib/jvm/java-6-openjdk/jre/bin/
 OS_CURRENT="$(shell uname -s)"
 ############# Tool locations ##########################################
 # If you copy a project from one host to another, the path where the  #
@@ -59,10 +60,12 @@ MP_AS_DIR=/opt/microchip/mplabc18/v3.36/bin/../mpasm
 MP_LD_DIR=/opt/microchip/mplabc18/v3.36/bin
 MP_AR_DIR=/opt/microchip/mplabc18/v3.36/bin
 # MP_BC_DIR is not defined
+
 # This makefile will use a C preprocessor to generate dependency files
 MP_CPP=/opt/microchip/mplabx/mplab_ide/mplab_ide/modules/../../bin/mplab-cpp
+
 .build-conf: ${BUILD_SUBPROJECTS}
-	${MAKE}  -f nbproject/Makefile-default.mk dist/${CND_CONF}/${IMAGE_TYPE}/AX12.X.${IMAGE_TYPE}.cof
+	${MAKE}  -f nbproject/Makefile-default.mk dist/${CND_CONF}/${IMAGE_TYPE}/AX-12.X.${IMAGE_TYPE}.cof
 
 MP_PROCESSOR_OPTION=18F2550
 MP_PROCESSOR_OPTION_LD=18f2550
@@ -128,13 +131,13 @@ endif
 # ------------------------------------------------------------------------------------
 # Rules for buildStep: link
 ifeq ($(TYPE_IMAGE), DEBUG_RUN)
-dist/${CND_CONF}/${IMAGE_TYPE}/AX12.X.${IMAGE_TYPE}.cof: ${OBJECTFILES}  nbproject/Makefile-${CND_CONF}.mk
+dist/${CND_CONF}/${IMAGE_TYPE}/AX-12.X.${IMAGE_TYPE}.cof: ${OBJECTFILES}  nbproject/Makefile-${CND_CONF}.mk
 	${MKDIR} dist/${CND_CONF}/${IMAGE_TYPE} 
-	${MP_LD} $(MP_EXTRA_LD_PRE)   -p$(MP_PROCESSOR_OPTION_LD)  -w -x   -z__MPLAB_BUILD=1  -u_CRUNTIME -z__MPLAB_DEBUG=1 -z__MPLAB_DEBUGGER_PK3=1 $(MP_LINKER_DEBUG_OPTION) -l ${MP_CC_DIR}/../lib  -odist/${CND_CONF}/${IMAGE_TYPE}/AX12.X.${IMAGE_TYPE}.cof ${OBJECTFILES}      
+	${MP_LD} $(MP_EXTRA_LD_PRE)   -p$(MP_PROCESSOR_OPTION_LD)  -w -x -u_DEBUG   -z__MPLAB_BUILD=1  -u_CRUNTIME -z__MPLAB_DEBUG=1 -z__MPLAB_DEBUGGER_PK3=1 $(MP_LINKER_DEBUG_OPTION) -l ${MP_CC_DIR}/../lib  -odist/${CND_CONF}/${IMAGE_TYPE}/AX-12.X.${IMAGE_TYPE}.cof ${OBJECTFILES}      
 else
-dist/${CND_CONF}/${IMAGE_TYPE}/AX12.X.${IMAGE_TYPE}.cof: ${OBJECTFILES}  nbproject/Makefile-${CND_CONF}.mk
+dist/${CND_CONF}/${IMAGE_TYPE}/AX-12.X.${IMAGE_TYPE}.cof: ${OBJECTFILES}  nbproject/Makefile-${CND_CONF}.mk
 	${MKDIR} dist/${CND_CONF}/${IMAGE_TYPE} 
-	${MP_LD} $(MP_EXTRA_LD_PRE)   -p$(MP_PROCESSOR_OPTION_LD)  -w    -z__MPLAB_BUILD=1  -u_CRUNTIME -l ${MP_CC_DIR}/../lib  -odist/${CND_CONF}/${IMAGE_TYPE}/AX12.X.${IMAGE_TYPE}.cof ${OBJECTFILES}      
+	${MP_LD} $(MP_EXTRA_LD_PRE)   -p$(MP_PROCESSOR_OPTION_LD)  -w    -z__MPLAB_BUILD=1  -u_CRUNTIME -l ${MP_CC_DIR}/../lib  -odist/${CND_CONF}/${IMAGE_TYPE}/AX-12.X.${IMAGE_TYPE}.cof ${OBJECTFILES}      
 endif
 
 

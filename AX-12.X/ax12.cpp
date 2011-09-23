@@ -4,10 +4,40 @@
 
 #include "ax12.h"
 
-int checksumAX;
+byte checksumAX;
+
+void SetTX() {
+    PORTCbits.RC0 = 1;
+    PORTCbits.RC1 = 0;
+}
+
+void SetRX() {
+    PORTCbits.RC0 = 0;
+    PORTCbits.RC1 = 1;
+}
+
+void PushUSART(byte b) {
+    while (BusyUSART());
+    WriteUSART(b);
+    checksumAX += b;
+}
+
+byte PopUSART() {
+    int i = 0;
+    byte b;
+
+    for (; i < 32767 && !DataRdyUSART(); i++);
+    //while(!DataRdyUSART());
+
+    b = ReadUSART();
+    checksumAX += b;
+    return b; // TODO : negative error ?
+}
 
 
 void SetupAX(/*TODO speed*/) {
+    TRISCbits.TRISC0 = 0;
+    TRISCbits.TRISC1 = 0; // TODO : NOT gate
     OpenUSART(USART_TX_INT_OFF & USART_RX_INT_OFF /*TODO*/ & USART_ASYNCH_MODE & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_LOW,
             12);//9600
 }
@@ -26,6 +56,8 @@ int RegisterLenAX(byte address) {
 }
 
 void PushHeaderAX(AX12 ax, int len, byte inst) {
+    SetTX();
+    
     PushUSART(0xFF);
     PushUSART(0xFF);
 
@@ -42,31 +74,50 @@ void PushBufferAX(int len, byte* buf) {
     }
 }
 
-#define PushFooterAX() PushUSART(~checksumAX)
-
-void PushUSART(byte b) {
-    while (BusyUSART());
-    WriteUSART(b);
-    checksumAX += b;
+void PushFooterAX() {
+    PushUSART(~checksumAX);
 }
 
-byte PopUSART() {
-    int i = 0;
-    for (; i < 32767 && !DataRdyUSART(); i++);
-    return ReadUSART(); // TODO : negative error
+int PopHeaderAX(AX12 ax, int len, byte* buf) {
+    byte b;
+    int i;
+    
+    while (BusyUSART()); // Wait for the data to be sent.
+
+    // TODO : ptit delay
+    SetRX();
+
+    while (PopUSART() != 0xFF); // Find a frame start.
+
+    if (PopUSART() != 0xFF) // There should have been two in a row.
+        return 1;
+
+    checksumAX = 0;
+
+    if(PopUSART() != ax.id) // For ID changes the old ID is returned.
+        return 2;
+    if(PopUSART() != 2 + len)
+        return 3;
+    ax.error = PopUSART(); // Error field of the status packet.
+    
+    for (i = 0; i < len; i++) {
+        buf[i] = PopUSART();
+    }
+
+    if (~checksumAX != PopUSART())
+        return 4;
+
+    return 0; // Success.
 }
 
 
-
-byte PingAX(AX12 ax) {
+int PingAX(AX12 ax) {
     PushHeaderAX(ax, 2, AX_INST_PING);
     PushFooterAX();
     // TODO : read
 }
 
-byte ReadAX(AX12 ax, byte address, int len, byte* buf) {
-    byte b;
-    int i;
+int ReadAX(AX12 ax, byte address, int len, byte* buf) {
     //TODO: timeout failsafe ?
 
     PushHeaderAX(ax, 2, AX_INST_READ_DATA);
@@ -74,37 +125,20 @@ byte ReadAX(AX12 ax, byte address, int len, byte* buf) {
     PushUSART(len);
     PushFooterAX();
 
-    // TODO : read
-    while ((b = PopUSART()) != 0xFF);
-    if (PopUSART() != 0xFF /* There should have been two in a row. */
-            || PopUSART() != ax.id
-            || PopUSART() != 2 + len)
-        return 0; //-1
-
-    if ((b = PopUSART()) != 0) // Error is zero.
-        return b; // TODO: sens d'une erreur ?
-
-    for (i = 0; i < len; i++) {
-        buf[i] = PopUSART();
-        checksumAX += buf[i];
-    }
-    if (~checksumAX != PopUSART())
-        return 0; //-1
-
+//TODO read
     return 0;
 }
 
-byte WriteAX(AX12 ax, byte address, int len, byte* buf) {
+int WriteAX(AX12 ax, byte address, int len, byte* buf) {
     PushHeaderAX(ax, 1 + len, AX_INST_WRITE_DATA);
     PushUSART(address);
     PushBufferAX(len, buf);
     PushFooterAX();
 
-    //TODO : read return packet
-    return 0;
+    return PopHeaderAX(ax, 0, NULL);
 }
 
-byte RegWriteAX(AX12 ax, byte address, int len, byte* buf) {
+int RegWriteAX(AX12 ax, byte address, int len, byte* buf) {
     PushHeaderAX(ax, 1 + len, AX_INST_REG_WRITE);
     PushUSART(address);
     PushBufferAX(len, buf);
@@ -114,19 +148,19 @@ byte RegWriteAX(AX12 ax, byte address, int len, byte* buf) {
     return 0;
 }
 
-byte ActionAX(AX12 ax) {
+int ActionAX(AX12 ax) {
     PushHeaderAX(ax, 0, AX_INST_ACTION);
     PushFooterAX();
 }
 
-byte ResetAX(AX12 ax) {
+int ResetAX(AX12 ax) {
     PushHeaderAX(ax, 0, AX_INST_RESET);
     PushFooterAX();
 }
 
 
 
-byte PutAX(AX12 ax, byte address, int value) {
+int PutAX(AX12 ax, byte address, int value) {
     return WriteAX(ax, address, RegisterLenAX(address), (byte*)&value /* C18 and AX12 are little-endian */);
 }
 
