@@ -26,19 +26,23 @@ byte PopUSART() {
     int i = 0;
     byte b;
 
-    for (; i < 32767 && !DataRdyUSART(); i++);
-    //while(!DataRdyUSART());
+    // TODO : reduce the delay in the middle of packets.
+    // TODO : check status packet avec la LED
+    // The maximum Return Delay Time is of 254 * 2µs so we should wait more than
+    // 0.5 ms, corresponing to 1250 clock cycles at 8MHz. Maybe.
+    //for (; i < 2000 && !DataRdyUSART(); i++);
 
-    b = ReadUSART();
+    b = ReadUSART(); // Non blocking.
     checksumAX += b;
-    return b; // TODO : negative error ?
+    return b; // Errors will be detected by the checksum.
 }
 
 
 void SetupAX(/*TODO speed*/) {
     TRISCbits.TRISC0 = 0;
-    TRISCbits.TRISC1 = 0; // TODO : NOT gate
-    OpenUSART(USART_TX_INT_OFF & USART_RX_INT_OFF /*TODO*/ & USART_ASYNCH_MODE & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_LOW,
+    TRISCbits.TRISC1 = 0;
+    OpenUSART(USART_TX_INT_OFF & USART_RX_INT_OFF & USART_ASYNCH_MODE
+            & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_LOW,
             12);//9600
 }
 
@@ -52,7 +56,7 @@ int RegisterLenAX(byte address) {
         case 34: case 36: case 38: case 40: case 48:
             return 2;
     }
-    return -1;
+    return 0;
 }
 
 void PushHeaderAX(AX12 ax, int len, byte inst) {
@@ -61,9 +65,9 @@ void PushHeaderAX(AX12 ax, int len, byte inst) {
     PushUSART(0xFF);
     PushUSART(0xFF);
 
-    checksumAX = 0;
+    checksumAX = 0; // The first two bytes don't count.
     PushUSART(ax.id);
-    PushUSART(len + 2);
+    PushUSART(len + 2); // Bytes to go : instruction + buffer (len) + checksum.
     PushUSART(inst);
 }
 
@@ -78,34 +82,33 @@ void PushFooterAX() {
     PushUSART(~checksumAX);
 }
 
-int PopHeaderAX(AX12 ax, int len, byte* buf) {
-    byte b;
+int PopReplyAX(AX12 ax, int len, byte* buf) {
     int i;
     
     while (BusyUSART()); // Wait for the data to be sent.
 
-    // TODO : ptit delay
     SetRX();
 
-    while (PopUSART() != 0xFF); // Find a frame start.
+    for (i = 0; i < 20 && PopUSART() != 0xFF; i++); // Find a frame start.
 
     if (PopUSART() != 0xFF) // There should have been two in a row.
-        return 1;
+        return 2;
 
     checksumAX = 0;
 
-    if(PopUSART() != ax.id) // For ID changes the old ID is returned.
-        return 2;
-    if(PopUSART() != 2 + len)
+    if(PopUSART() != ax.id  /* For ID changes the old ID is returned. */
+            && ax.id != AX_BROADCAST)
         return 3;
-    ax.error = PopUSART(); // Error field of the status packet.
+    if(PopUSART() != 2 + len)
+        return 4;
+    *((byte*)&ax.errorbits) = PopUSART(); // Error field of the status packet.
     
     for (i = 0; i < len; i++) {
         buf[i] = PopUSART();
     }
 
     if (~checksumAX != PopUSART())
-        return 4;
+        return 5;
 
     return 0; // Success.
 }
@@ -114,19 +117,17 @@ int PopHeaderAX(AX12 ax, int len, byte* buf) {
 int PingAX(AX12 ax) {
     PushHeaderAX(ax, 2, AX_INST_PING);
     PushFooterAX();
-    // TODO : read
+
+    return PopReplyAX(ax, 0, NULL); // Ping always triggers a status packet.
 }
 
 int ReadAX(AX12 ax, byte address, int len, byte* buf) {
-    //TODO: timeout failsafe ?
-
     PushHeaderAX(ax, 2, AX_INST_READ_DATA);
     PushUSART(address);
     PushUSART(len);
     PushFooterAX();
 
-//TODO read
-    return 0;
+    return PopReplyAX(ax, len,  buf); // Might work with AX_BROADCAST.
 }
 
 int WriteAX(AX12 ax, byte address, int len, byte* buf) {
@@ -135,7 +136,10 @@ int WriteAX(AX12 ax, byte address, int len, byte* buf) {
     PushBufferAX(len, buf);
     PushFooterAX();
 
-    return PopHeaderAX(ax, 0, NULL);
+    if(ax.id == AX_BROADCAST)
+        return 0;
+    else
+        return PopReplyAX(ax, 0, NULL);
 }
 
 int RegWriteAX(AX12 ax, byte address, int len, byte* buf) {
@@ -144,32 +148,47 @@ int RegWriteAX(AX12 ax, byte address, int len, byte* buf) {
     PushBufferAX(len, buf);
     PushFooterAX();
 
-    //TODO : read return packet
-    return 0;
+    if(ax.id == AX_BROADCAST)
+        return 0;
+    else
+        return PopReplyAX(ax, 0, NULL);
 }
 
 int ActionAX(AX12 ax) {
     PushHeaderAX(ax, 0, AX_INST_ACTION);
     PushFooterAX();
+
+    if(ax.id == AX_BROADCAST) // Most likely.
+        return 0;
+    else
+        return PopReplyAX(ax, 0, NULL);
 }
 
 int ResetAX(AX12 ax) {
     PushHeaderAX(ax, 0, AX_INST_RESET);
     PushFooterAX();
+
+    if(ax.id == AX_BROADCAST)
+        return 0;
+    else
+        return PopReplyAX(ax, 0, NULL);
 }
 
 
 
 int PutAX(AX12 ax, byte address, int value) {
-    return WriteAX(ax, address, RegisterLenAX(address), (byte*)&value /* C18 and AX12 are little-endian */);
+    int i = RegisterLenAX(address);
+    return WriteAX(ax, address, RegisterLenAX(address),
+                   (byte*)&value /* C18 and AX12 are little-endian */);
 }
 
 int GetAX(AX12 ax, byte address) {
-    int len = RegisterLenAX(address);
     int value;
-
-    byte ret = ReadAX(ax, address, len, (byte*)&value);
-    // TODO handle errors
+    int len = RegisterLenAX(address);
+    
+    byte err = ReadAX(ax, address, len, (byte*)&value);
+    if(err)
+        return -1;
 
     return value;
 }

@@ -36,7 +36,7 @@ typedef unsigned char byte;
 #define AX_CW_COMPLIANCE_SLOPE      28
 #define AX_CCW_COMPLIANCE_SLOPE     29
 #define AX_GOAL_POSITION            30
-#define AX_GOAL_SPEED               32
+#define AX_MOVING_SPEED             32
 #define AX_TORQUE_LIMIT             34
 #define AX_PRESENT_POSITION         36
 #define AX_PRESENT_SPEED            38
@@ -63,11 +63,24 @@ typedef unsigned char byte;
 #define AX_INST_RESET               6
 #define AX_INST_SYNC_WRITE          131
 
+#define AX_BROADCAST               254
+
 //TODO : le reste
 
 typedef struct {
-    byte id; // ID
-    byte error; // Last status returned
+        unsigned input_voltage : 1;
+        unsigned angle_limit : 1;
+        unsigned overheating : 1;
+        unsigned range : 1;
+        unsigned cheksum : 1;
+        unsigned overload : 1;
+        unsigned instruction : 1;
+        unsigned : 1;
+} errorAX;
+
+typedef struct {
+    byte id;
+    errorAX errorbits; // Last status returned
 } AX12;
 
 
@@ -81,8 +94,7 @@ int RegisterLenAX(byte address);
 void PushHeaderAX(AX12 ax, int len, byte inst);
 void PushBufferAX(int len, byte* buf);
 void PushFooterAX();
-
-int PopHeaderAX();
+int PopReplyAX(AX12 ax, int len, byte* buf);
 
 int     PingAX(AX12 ax);
 int     ReadAX(AX12 ax, byte address, int len, byte* buf);
@@ -90,7 +102,7 @@ int    WriteAX(AX12 ax, byte address, int len, byte* buf);
 int RegWriteAX(AX12 ax, byte address, int len, byte* buf);
 int   ActionAX(AX12 ax);
 int    ResetAX(AX12 ax);
-// byte SyncWriteAX(AX12 ax, ...);
+// byte SyncWriteAX(AX12 ax, ...); // TODO
 
 // Shorthands
 int GetAX(AX12 ax, byte address);
@@ -100,22 +112,12 @@ int PutAX(AX12 ax, byte address, int value);
 /*
 boolean inverse;
 
-int status_id; stupide il ne doit pas changer    // ID del paquete de retorno
-int status_error;                                // error del paquete de retorno
-
-static byte ax_rx_buffer[AX12_BUFFER_SIZE];      // buffer de recepción
-static volatile byte ax_rx_Pointer;              // making these volatile keeps the compiler from optimizing loops of available()
-
-}
 static void AX12init (long baud);
 static void autoDetect (int* list_motors, byte num_motors);
-
 
 void setEndlessTurnMode (boolean onoff);
 void endlessTurn (int velocidad);
 byte presentPSL (int* PSL);
-
-static void setNone();
 */
 
 #endif /* _AX12_H */

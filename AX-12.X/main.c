@@ -26,7 +26,6 @@
 
 #define led PORTCbits.RC0
 
-
 /////*PROTOTYPES*/////
 
 void high_isr(void);
@@ -68,8 +67,8 @@ void low_isr(void) {
 /////*PROGRAMME PRINCIPAL*/////
 
 void main(void) {
-    AX12 ax;
-    int ret = -1;
+    AX12 ax = {0};
+    int i = 0x00EE;
 
     //initialisations
     CMCON = 0b00000111; /* Désactive les comparateurs. */
@@ -87,17 +86,23 @@ void main(void) {
 
     SetupAX();
     ax.id = 2;
-    ax.error = 0;
+    PutAX(ax, AX_TORQUE_ENABLE, 1);
 
     while (1) {
-        ret = PutAX(ax, AX_LED, 1);
-        
+        PutAX(ax, AX_LED, 1);
+         Delay10KTCYx(50);
+        PutAX(ax, AX_LED, 0);
+        Delay10KTCYx(50);
+
+        PutAX(ax, AX_MOVING_SPEED, i);
+        //i+=20;
+        Delay10KTCYx(500);
+
         /*int v = GetAX(ax, AX_PRESENT_TEMPERATURE);
         PushUSART(v);
         PushUSART(v);
         PushUSART(v);
         PushUSART(v);*/
 
-        Delay10KTCYx(200);
     }
 }
