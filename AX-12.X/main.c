@@ -68,8 +68,9 @@ void low_isr(void) {
 
 void main(void) {
     AX12 ax = {0};
-    int i = 0x00EE;
-
+    int i = 0;
+    int j = 0;
+    
     //initialisations
     CMCON = 0b00000111; /* Désactive les comparateurs. */
     ADCON0 = 0b00000000;
@@ -84,25 +85,16 @@ void main(void) {
 
     Delay10KTCYx(200);
 
-    SetupAX();
+    SetupAX(12);
     ax.id = 2;
-    PutAX(ax, AX_TORQUE_ENABLE, 1);
+    //PutAX(ax, AX_TORQUE_ENABLE, 1);
 
     while (1) {
-        PutAX(ax, AX_LED, 1);
-         Delay10KTCYx(50);
-        PutAX(ax, AX_LED, 0);
-        Delay10KTCYx(50);
+        i = !i;
+        PutAX(ax, AX_LED, i);
 
-        PutAX(ax, AX_MOVING_SPEED, i);
-        //i+=20;
-        Delay10KTCYx(500);
-
-        /*int v = GetAX(ax, AX_PRESENT_TEMPERATURE);
-        PushUSART(v);
-        PushUSART(v);
-        PushUSART(v);
-        PushUSART(v);*/
-
+        //PutAX(ax, AX_MOVING_SPEED, 500);
+        j = PingAX(ax);
+        Delay10KTCYx(100);
     }
 }

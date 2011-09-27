@@ -1,10 +1,43 @@
 /*
-   Martin d'Allens, starting 2011-09-20.
+ *  ax12.cpp - C18 library to use the AX-12 servomotor (Dynamixel Series) from
+ *  Robotis on the PIC18F family from Microchip.
+ *
+ *  Tested with PIC18F2550 under MPLAB X.
+ *
+ *  2011-09-20 - First version by Martin d'Allens <martin.dallens@gmail.com>
+ *
+ *  TODO : try using high impedances
+ *  TODO : helpers for bauds
+boolean inverse;
+
+static void AX12init (long baud);
+static void autoDetect (int* list_motors, byte num_motors);
+
+void setEndlessTurnMode (boolean onoff);
+void endlessTurn (int velocidad);
+byte presentPSL (int* PSL);
+ *
+ *  This library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "ax12.h"
 
-byte checksumAX;
+
+
+/******************************************************************************
+ * Wiring dependent functions, that you should customize
+ ******************************************************************************/
 
 void SetTX() {
     PORTCbits.RC0 = 1;
@@ -16,6 +49,24 @@ void SetRX() {
     PORTCbits.RC1 = 1;
 }
 
+void SetupAX(unsigned int spbrg) {
+    TRISCbits.TRISC0 = 0;
+    TRISCbits.TRISC1 = 0;
+
+    // Set spbrg=12 for 9600 baud at 8MHz (internal osc)
+    // because we use USART_BRGH_LOW in USART_ASYNCH_MODE.
+    OpenUSART(USART_TX_INT_OFF & USART_RX_INT_OFF & USART_ASYNCH_MODE
+            & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_LOW,
+            spbrg);
+}
+
+
+/******************************************************************************
+ * Functions to write and write command and return packets
+ ******************************************************************************/
+
+byte checksumAX;
+
 void PushUSART(byte b) {
     while (BusyUSART());
     WriteUSART(b);
@@ -23,7 +74,6 @@ void PushUSART(byte b) {
 }
 
 byte PopUSART() {
-    int i = 0;
     byte b;
 
     // TODO : reduce the delay in the middle of packets.
@@ -37,28 +87,10 @@ byte PopUSART() {
     return b; // Errors will be detected by the checksum.
 }
 
-
-void SetupAX(/*TODO speed*/) {
-    TRISCbits.TRISC0 = 0;
-    TRISCbits.TRISC1 = 0;
-    OpenUSART(USART_TX_INT_OFF & USART_RX_INT_OFF & USART_ASYNCH_MODE
-            & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_LOW,
-            12);//9600
-}
-
-int RegisterLenAX(byte address) {
-    switch (address) {
-        case  2: case  3: case  4: case  5: case 11: case 12: case 13: case 16:
-        case 17: case 18: case 19: case 24: case 25: case 26: case 27: case 28:
-        case 29: case 42: case 43: case 44: case 46: case 47:
-            return 1;
-        case  0: case  6: case  8: case 14: case 20: case 22: case 30: case 32:
-        case 34: case 36: case 38: case 40: case 48:
-            return 2;
-    }
-    return 0;
-}
-
+/*
+ * Write the first bytes of a command packet, assuming a <len> parameters will
+ * follow.
+ */
 void PushHeaderAX(AX12 ax, int len, byte inst) {
     SetTX();
     
@@ -71,6 +103,7 @@ void PushHeaderAX(AX12 ax, int len, byte inst) {
     PushUSART(inst);
 }
 
+/* Write a buffer of given length to the body of a command packet. */
 void PushBufferAX(int len, byte* buf) {
     int i;
     for (i = 0; i < len; i++) {
@@ -78,10 +111,12 @@ void PushBufferAX(int len, byte* buf) {
     }
 }
 
+/* Finish a command packet by sending the checksum. */
 void PushFooterAX() {
     PushUSART(~checksumAX);
 }
 
+/* Try to read a status packet with <len> parameters and write it to <buf>. */
 int PopReplyAX(AX12 ax, int len, byte* buf) {
     int i;
     
@@ -96,9 +131,13 @@ int PopReplyAX(AX12 ax, int len, byte* buf) {
 
     checksumAX = 0;
 
-    if(PopUSART() != ax.id  /* For ID changes the old ID is returned. */
+    i = PopUSART(); // TODO : dégager
+    if(i != ax.id  /* For ID changes the old ID is returned. */
             && ax.id != AX_BROADCAST)
+    {
+     i = 5;
         return 3;
+    }
     if(PopUSART() != 2 + len)
         return 4;
     *((byte*)&ax.errorbits) = PopUSART(); // Error field of the status packet.
@@ -113,6 +152,10 @@ int PopReplyAX(AX12 ax, int len, byte* buf) {
     return 0; // Success.
 }
 
+
+/******************************************************************************
+ * Instructions Implementation
+ ******************************************************************************/
 
 int PingAX(AX12 ax) {
     PushHeaderAX(ax, 2, AX_INST_PING);
@@ -175,13 +218,31 @@ int ResetAX(AX12 ax) {
 }
 
 
+/******************************************************************************
+ * Convenience Functions
+ ******************************************************************************/
 
+int RegisterLenAX(byte address) {
+    switch (address) {
+        case  2: case  3: case  4: case  5: case 11: case 12: case 13: case 16:
+        case 17: case 18: case 19: case 24: case 25: case 26: case 27: case 28:
+        case 29: case 42: case 43: case 44: case 46: case 47:
+            return 1;
+        case  0: case  6: case  8: case 14: case 20: case 22: case 30: case 32:
+        case 34: case 36: case 38: case 40: case 48:
+            return 2;
+    }
+    return 0; // Unexpected.
+}
+
+/* Write a value to a registry, guessing its width. */
 int PutAX(AX12 ax, byte address, int value) {
     int i = RegisterLenAX(address);
     return WriteAX(ax, address, RegisterLenAX(address),
                    (byte*)&value /* C18 and AX12 are little-endian */);
 }
 
+/* Read a value from a registry, guessing its width. */
 int GetAX(AX12 ax, byte address) {
     int value;
     int len = RegisterLenAX(address);

@@ -1,5 +1,19 @@
 /*
-   Martin d'Allens, starting 2011-09-20.
+ *  ax12.h - C18 library to use the AX-12 servomotor (Dynamixel Series) from
+ *  Robotis on the PIC18F family from Microchip.
+ *
+ *  This library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 
@@ -8,7 +22,8 @@
 
 typedef unsigned char byte;
 
-// EEPROM
+
+// EEPROM Registers
 #define AX_MODEL_NUMBER             0
 #define AX_VERSION                  2
 #define AX_ID                       3
@@ -16,7 +31,7 @@ typedef unsigned char byte;
 #define AX_RETURN_DELAY_TIME        5
 #define AX_CW_ANGLE_LIMIT           6
 #define AX_CCW_ANGLE_LIMIT          8
-//#define AX_SYSTEM_DATA2             10
+#define AX_RESERVED_1               10
 #define AX_LIMIT_TEMPERATURE        11
 #define AX_DOWN_LIMIT_VOLTAGE       12
 #define AX_UP_LIMIT_VOLTAGE         13
@@ -24,11 +39,11 @@ typedef unsigned char byte;
 #define AX_RETURN_LEVEL             16
 #define AX_ALARM_LED                17
 #define AX_ALARM_SHUTDOWN           18
-//#define AX_OPERATING_MODE           19
+#define AX_RESERVED_2               19
 #define AX_DOWN_CALIBRATION         20
 #define AX_UP_CALIBRATION           22
 
-// RAM
+// RAM Registers
 #define AX_TORQUE_ENABLE            24
 #define AX_LED                      25
 #define AX_CW_COMPLIANCE_MARGIN     26
@@ -63,10 +78,13 @@ typedef unsigned char byte;
 #define AX_INST_RESET               6
 #define AX_INST_SYNC_WRITE          131
 
+// Broadcast ID
 #define AX_BROADCAST               254
 
-//TODO : le reste
-
+/*
+ * Stucture to decode error fields used in the return status, address17 and
+ * address18, where each bit has a different meaning.
+ */
 typedef struct {
         unsigned input_voltage : 1;
         unsigned angle_limit : 1;
@@ -79,7 +97,7 @@ typedef struct {
 } errorAX;
 
 typedef struct {
-    byte id;
+    byte id; // ID of an AX-12 on the bus, or AX_BROADCAST for all of them.
     errorAX errorbits; // Last status returned
 } AX12;
 
@@ -90,34 +108,22 @@ void PushUSART(byte b);
 byte PopUSART();
 
 void SetupAX();
-int RegisterLenAX(byte address);
 void PushHeaderAX(AX12 ax, int len, byte inst);
 void PushBufferAX(int len, byte* buf);
 void PushFooterAX();
 int PopReplyAX(AX12 ax, int len, byte* buf);
 
-int     PingAX(AX12 ax);
-int     ReadAX(AX12 ax, byte address, int len, byte* buf);
-int    WriteAX(AX12 ax, byte address, int len, byte* buf);
-int RegWriteAX(AX12 ax, byte address, int len, byte* buf);
-int   ActionAX(AX12 ax);
-int    ResetAX(AX12 ax);
-// byte SyncWriteAX(AX12 ax, ...); // TODO
+int      PingAX(AX12 ax);
+int      ReadAX(AX12 ax, byte address, int len, byte* buf);
+int     WriteAX(AX12 ax, byte address, int len, byte* buf);
+int  RegWriteAX(AX12 ax, byte address, int len, byte* buf);
+int    ActionAX(AX12 ax);
+int     ResetAX(AX12 ax);
+int SyncWriteAX(AX12 ax, ...);
 
-// Shorthands
+int RegisterLenAX(byte address);
 int GetAX(AX12 ax, byte address);
 int PutAX(AX12 ax, byte address, int value);
 
-
-/*
-boolean inverse;
-
-static void AX12init (long baud);
-static void autoDetect (int* list_motors, byte num_motors);
-
-void setEndlessTurnMode (boolean onoff);
-void endlessTurn (int velocidad);
-byte presentPSL (int* PSL);
-*/
 
 #endif /* _AX12_H */
