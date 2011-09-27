@@ -35,8 +35,8 @@
 #define TRMIN 2
 //#define TRMAX 3
 #define Kd 0
-#define Kp 2
-#define Ki 1
+#define Kp 5
+#define Ki 2
 
 #define XTAL 8000000
 #define TCY 4.0*1000000/XTAL /* Durée d'un cycle d'horloge en µs. */
@@ -47,16 +47,22 @@ void low_isr(void);
 void GsetDC(int dc);
 void DsetDC(int dc);
 float calcVitesse(long cyclesTimer);
+void calcPID( void );
 
 /////*VARIABLES GLOBALES*/////
 
 char TRMAX = 5 ;
 int  k=0, v=0, tps=0;
-int Gconsigne = 0, Gerreur=0, GlastErreur=0;
-int GPerreur=0, GDerreur=0, GIerreur=0, Gpwm=0;
 long cyclesTimer = 0;
 char chronoON = 0, tour=0, sens=1, err=0 ;
 float Gvitesse = 0, Dvitesse =0, vitesse =0;
+
+int Gconsigne = 0, Gerreur=0, GlastErreur=0;
+int GPerreur=0, GDerreur=0, GIerreur=0, Gpwm=0;
+
+int Dconsigne = 0, Derreur=0, DlastErreur=0;
+int DPerreur=0, DDerreur=0, DIerreur=0, Dpwm=0;
+
 
 /////*INTERRUPTIONS*/////
 
@@ -78,7 +84,6 @@ void high_isr(void)
   
     if(INTCONbits.INT0IE && INTCONbits.INT0IF)
     {
-        led = 1;
         if(chronoON) /* Si chrono comptait. */
         {
             tour++;
@@ -98,9 +103,8 @@ void high_isr(void)
                 {
                     Gvitesse = calcVitesse(cyclesTimer);
                     INTCONbits.INT0IE = 0;
-                    //INTCON3bits.INT1IE = 1;
+                    INTCON3bits.INT1IE = 1;
                     tour = 0;
-                    tps = ReadTimer1();
                 }
             }
         }
@@ -110,7 +114,6 @@ void high_isr(void)
         }
 
         WriteTimer0(0);
-        led = 0 ;
         INTCONbits.INT0IF = 0;
     }
 
@@ -132,9 +135,12 @@ void high_isr(void)
                 if(INTCONbits.TMR0IF) err = 1 ; /* Test débordement juste avant mesure. */
                 if(tour >= TRMAX)
                 {
-                    Gvitesse = calcVitesse(cyclesTimer);
+                    Dvitesse = calcVitesse(cyclesTimer);
                     INTCON3bits.INT1IE = 0;
                     tour = 0;
+                    tps = ReadTimer1();
+                    calcPID();
+                    INTCONbits.INT0IE = 1;
                 }
             }
         }
@@ -156,6 +162,9 @@ void high_isr(void)
            INTCONbits.INT0IE = 0;
            INTCON3bits.INT1IE = 0;
            err = 0;
+           Delay10KTCYx(40); //20ms
+           calcPID();
+           INTCONbits.INT0E = 1;
         }
         INTCONbits.TMR0IF = 0;
         WriteTimer0(0);
@@ -215,7 +224,7 @@ void low_isr(void)
 void main (void)
 {
 //initialisations
-     CMCON   =  0b00000111; /* Désactive les comparateurs. */
+    CMCON   =  0b00000111; /* Désactive les comparateurs. */
     ADCON0  = 0b00000000;
     ADCON1  = 0b00001111;
     WDTCON  = 0 ;
@@ -264,42 +273,17 @@ void main (void)
     INTCON3bits.INT1IE = 0;
 
   
-    GsetDC(100);
-    Delay10KTCYx(255);
-    Gconsigne = 500;
+    GsetDC(0);
+    DsetDC(0);
     
+    Delay10KTCYx(255);
+    Gconsigne = 50;
+    Dconsigne = -50;
+    
+    INTCONbits.INT0E = 1;
+
     while(1)
     {
-        WriteTimer1(0);
-        INTCONbits.INT0IE = 1;
-        //Delay10KTCYx(30);
-        v= Gvitesse ;
-        tps = tps/500 ;
-        if(tps > 11 && TRMAX > 2) TRMAX-- ;
-        if(tps < 9 && TRMAX < 13) TRMAX++ ;
-        printf("v : %d tps : %u ms\n",v,tps);
-       /*v = Gvitesse;
-        printf("g : %d ",v);
-        v = Dvitesse;
-        printf("d : %d en %d\n", v, tps);
-*/
-        /* PID */
-      /*  Gerreur = Gconsigne - Gvitesse;
-
-        GPerreur = (Kp*Gerreur)/100;
-        GDerreur = Kd*(Gerreur - GlastErreur);
-        GIerreur = GIerreur + (Ki*Gerreur)/100;
-
-        Gpwm = GPerreur + GDerreur + GIerreur ;
-
-        GsetDC(Gpwm);
-        printf("Gpwm : %d erreur : %d\n", Gpwm, Gerreur*100);
-        led = led^1;
-        */
-
-
-
-
        
     }
 }
@@ -349,4 +333,40 @@ float calcVitesse(long cyclesTimer)
    vitesse = 60000000/vitesse ;
    if(sens == -1) vitesse = -vitesse ;
    return vitesse ;
+}
+
+void calcPID( void )
+{
+    led = led^1;
+
+    /* Calcul du temps écoulé depuis la dernière mesure. */
+    tps = tps/500 ;
+    if(tps > 8 && TRMAX > 2) TRMAX-- ;
+    if(tps < 12 && TRMAX < 13) TRMAX++ ;
+
+    
+
+    /* Calcul du PID */
+
+    Gerreur = Gconsigne - Gvitesse/60; /* Vitesse en tours par sec. */
+    GPerreur = (Kp*Gerreur);
+    GDerreur = Kd*(Gerreur - GlastErreur);
+    GIerreur = GIerreur + (Ki*Gerreur);
+    Gpwm = GPerreur + GDerreur + GIerreur ;
+
+    Derreur = Dconsigne - Dvitesse/60; /* Vitesse en tours par sec. */
+    DPerreur = (Kp*Derreur);
+    DDerreur = Kd*(Derreur - DlastErreur);
+    DIerreur = DIerreur + (Ki*Derreur);
+    Dpwm = DPerreur + DDerreur + DIerreur ;
+
+    GsetDC(Gpwm);
+    DsetDC(Dpwm);
+
+ //  printf("e : %d tps : %u ms\n",Gerreur,tps);
+
+
+
+
+
 }
