@@ -1,24 +1,27 @@
 #include <stdio.h>
-#include <p18cxxx.h>
+#include <p18f2680.h>
 #include <delays.h>
 
 #define led PORTCbits.RC0
 
 #pragma config OSC = HS
-#pragma config FCMEN = ON
+#pragma config FCMEN = OFF
 #pragma config IESO = OFF
 #pragma config PWRT = OFF
+
 #pragma config WDT = OFF
-#pragma config WDTPS = 32768
+
 #pragma config MCLRE = ON
+
 #pragma config LPT1OSC = OFF
 #pragma config PBADEN = OFF
 #pragma config DEBUG = OFF
 #pragma config XINST = OFF
-#pragma config BBSIZ = 4096
+#pragma config BBSIZ = 1024
 #pragma config LVP = OFF
-#pragma config STVREN = ON
-#pragma config CPB = OFF
+
+
+
 
 
 /////VARIABLES GLOBALES ////
@@ -65,10 +68,8 @@ void main (void)
         ADCON1 = 0x0F ;
 	ADCON0 = 0b00000000;
 	WDTCON = 0 ;
-	OSCCON = 0b01111100;
+	//OSCCON = 0b01111100;
         
-
-
         /* Direction des ports I in, O out*/
 	TRISA = 0b11111111 ;
 	TRISB = 0b01111111 ;
@@ -84,8 +85,12 @@ void main (void)
 
 	while(1)
         {
-            Delay10KTCYx(255);
-            led = led^1;
+           led = led^1;
+        Delay10KTCYx(200);
+        Delay10KTCYx(200);
+        Delay10KTCYx(200);
+        Delay10KTCYx(200);
+        Delay10KTCYx(200);
         }
         
 }
