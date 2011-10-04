@@ -1,4 +1,3 @@
-
 #include <timers.h>
 #include <p18f2550.h>
 
@@ -59,7 +58,7 @@ void InterruptServo() {
 
             WriteTimer0(65535
                     /* Maximum width of 2.1ms. */
-                    - AngleServo[CurrentServo] * 2 * (2100 / 180)
+                    - AngleServo[CurrentServo] * 2 * ((2100 - 900) / 180)
                     /* Minimum width of 0.9ms. */
                     - 900 * 2 /* 2 = 8MHz / 4 / 1ms  */
                     );
