@@ -49,7 +49,7 @@
  *                              mode would not compile.  (Rev 1.2)
  *
  ********************************************************************/
-#include "../lib-an738/CAN18XX8.h"
+#include "../libcan/can18xx8.h"
 
 
 #if defined(MCHP_C18)
