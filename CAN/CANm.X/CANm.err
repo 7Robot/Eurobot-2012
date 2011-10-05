@@ -1,2 +1,3 @@
 Warning[2066] CANm.c 104 : type qualifier mismatch in assignment
-Warning[2066] CANm.c 111 : type qualifier mismatch in assignment
+Warning[2066] CANm.c 112 : type qualifier mismatch in assignment
+Warning[2054] CANm.c 113 : suspicious pointer conversion
