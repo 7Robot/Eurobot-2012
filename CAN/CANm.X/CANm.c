@@ -15,7 +15,7 @@
 #pragma config WDT = OFF
 
 #pragma config MCLRE = ON
-        message = "";
+
 
 
 #pragma config LPT1OSC = OFF
