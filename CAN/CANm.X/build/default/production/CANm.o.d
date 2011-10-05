@@ -1,1 +1,1 @@
-build/default/production/CANm.o: CANm.c CAN18XX8.h
+build/default/production/CANm.o: CANm.c ../libcan/can18xx8.h

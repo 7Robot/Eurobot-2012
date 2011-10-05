@@ -2,7 +2,7 @@
 #include <p18f2680.h>
 #include <delays.h>
 #include <usart.h>
-#include "./CAN18XX8.h"
+#include "../libcan/can18xx8.h"
 
 #define XTAL 12000000
 #define led PORTCbits.RC0
