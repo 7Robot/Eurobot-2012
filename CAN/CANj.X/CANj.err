@@ -1,2 +1,2 @@
-Warning[2066] CANj.c 91 : type qualifier mismatch in assignment
-Warning[2066] CANj.c 98 : type qualifier mismatch in assignment
+Warning[2066] CANj.c 93 : type qualifier mismatch in assignment
+Warning[2066] CANj.c 100 : type qualifier mismatch in assignment

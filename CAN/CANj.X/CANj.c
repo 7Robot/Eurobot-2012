@@ -3,6 +3,8 @@
 #include <delays.h>
 #include <usart.h>
 
+
+
 #define XTAL 12000000
 #define led PORTCbits.RC0
 
@@ -74,7 +76,7 @@ void main (void)
         
         /* Direction des ports I in, O out*/
 	TRISA = 0b11111111 ;
-	TRISB = 0b01111111 ;
+	TRISB = 0b01111011 ;//canTX en sortie
 	TRISC = 0b11111110;
 	
         /* Etat des sorties */
@@ -88,14 +90,14 @@ void main (void)
 
         //INTCONbits.GIE=1;
 
-        printf("Yes you CAN !\n");
+        printf("J-Yes you CAN !\n");
 
 	while(1)
         {
         led = led^1;
         Delay10KTCYx(200);
         i++;
-        printf("test %d\n",i);
+        printf("J-test %d\n",i);
         }
         
 }

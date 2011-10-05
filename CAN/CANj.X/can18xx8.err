@@ -1,0 +1,12 @@
+Error[1205] ../lib-an738/can18xx8.c 175 : unknown member 'RX0DBEN' in '__tag_404'
+Error[1131] ../lib-an738/can18xx8.c 175 : type mismatch in assignment
+Error[1205] ../lib-an738/can18xx8.c 687 : unknown member 'RX0OVFL' in '__tag_438'
+Error[1205] ../lib-an738/can18xx8.c 690 : unknown member 'RX0OVFL' in '__tag_438'
+Error[1131] ../lib-an738/can18xx8.c 690 : type mismatch in assignment
+Error[1117] ../lib-an738/can18xx8.c 690 : scalar type expected in 'if' statement
+Error[1205] ../lib-an738/can18xx8.c 693 : unknown member 'RX0DBEN' in '__tag_404'
+Error[1117] ../lib-an738/can18xx8.c 696 : scalar type expected in 'if' statement
+Error[1205] ../lib-an738/can18xx8.c 711 : unknown member 'RX1OVFL' in '__tag_438'
+Error[1205] ../lib-an738/can18xx8.c 714 : unknown member 'RX1OVFL' in '__tag_438'
+Error[1131] ../lib-an738/can18xx8.c 714 : type mismatch in assignment
+Error[1117] ../lib-an738/can18xx8.c 714 : scalar type expected in 'if' statement
