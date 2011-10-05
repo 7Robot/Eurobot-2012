@@ -49,11 +49,11 @@
  *                              mode would not compile.  (Rev 1.2)
  *
  ********************************************************************/
-#include "../lib-an738/CAN18XX8.h"
+#include "CAN18XX8.h"
 
 
 #if defined(MCHP_C18)
-    #include <p18cxxx.h>    // p18cxxx.h must have current processor
+    #include "/opt/microchip/mplabc18/v3.36/h/p18f2680.h"   // p18cxxx.h must have current processor
                             // defined.
 #endif
 

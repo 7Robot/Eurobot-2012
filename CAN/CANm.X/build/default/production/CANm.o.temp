@@ -1,1 +1,1 @@
-CANm.o: CANm.c
+CANm.o: CANm.c CAN18XX8.h
