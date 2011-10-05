@@ -32,7 +32,7 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/CANj.o ${OBJECTDIR}/_ext/1221568840/can18xx8.o
+OBJECTFILES=${OBJECTDIR}/CANj.o ${OBJECTDIR}/_ext/1018694054/can18xx8.o
 
 
 CFLAGS=
@@ -101,16 +101,16 @@ endif
 # ------------------------------------------------------------------------------------
 # Rules for buildStep: compile
 ifeq ($(TYPE_IMAGE), DEBUG_RUN)
-${OBJECTDIR}/_ext/1221568840/can18xx8.o: ../lib-an738/can18xx8.c  nbproject/Makefile-${CND_CONF}.mk
-	${RM} ${OBJECTDIR}/_ext/1221568840/can18xx8.o.d 
-	${MKDIR} ${OBJECTDIR}/_ext/1221568840 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION)   -I ${MP_CC_DIR}/../h  -fo ${OBJECTDIR}/_ext/1221568840/can18xx8.o   ../lib-an738/can18xx8.c  > ${OBJECTDIR}/_ext/1221568840/can18xx8.err 2>&1 ; if [ $$? -eq 0 ] ; then cat ${OBJECTDIR}/_ext/1221568840/can18xx8.err | sed 's/\(^.*:.*:\)\(Warning\)\(.*$$\)/\1 \2:\3/g' ; else cat ${OBJECTDIR}/_ext/1221568840/can18xx8.err | sed 's/\(^.*:.*:\)\(Error\)\(.*$$\)/\1 \2:\3/g' ; exit 1 ; fi
-	${MP_CPP}  -MMD ${OBJECTDIR}/_ext/1221568840/can18xx8.o.temp ../lib-an738/can18xx8.c __temp_cpp_output__ -D __18F2680 -D __18CXX -I /opt/microchip/mplabc18/v3.40/bin/../h  -D__18F2680
-	printf "%s/" ${OBJECTDIR}/_ext/1221568840 > ${OBJECTDIR}/_ext/1221568840/can18xx8.o.d
+${OBJECTDIR}/_ext/1018694054/can18xx8.o: ../libcan/can18xx8.c  nbproject/Makefile-${CND_CONF}.mk
+	${RM} ${OBJECTDIR}/_ext/1018694054/can18xx8.o.d 
+	${MKDIR} ${OBJECTDIR}/_ext/1018694054 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION)   -I ${MP_CC_DIR}/../h  -fo ${OBJECTDIR}/_ext/1018694054/can18xx8.o   ../libcan/can18xx8.c  > ${OBJECTDIR}/_ext/1018694054/can18xx8.err 2>&1 ; if [ $$? -eq 0 ] ; then cat ${OBJECTDIR}/_ext/1018694054/can18xx8.err | sed 's/\(^.*:.*:\)\(Warning\)\(.*$$\)/\1 \2:\3/g' ; else cat ${OBJECTDIR}/_ext/1018694054/can18xx8.err | sed 's/\(^.*:.*:\)\(Error\)\(.*$$\)/\1 \2:\3/g' ; exit 1 ; fi
+	${MP_CPP}  -MMD ${OBJECTDIR}/_ext/1018694054/can18xx8.o.temp ../libcan/can18xx8.c __temp_cpp_output__ -D __18F2680 -D __18CXX -I /opt/microchip/mplabc18/v3.40/bin/../h  -D__18F2680
+	printf "%s/" ${OBJECTDIR}/_ext/1018694054 > ${OBJECTDIR}/_ext/1018694054/can18xx8.o.d
 ifneq (,$(findstring MINGW32,$(OS_CURRENT)))
-	cat ${OBJECTDIR}/_ext/1221568840/can18xx8.o.temp | sed -e 's/\\\ /__SPACES__/g' -e's/\\$$/__EOL__/g' -e 's/\\/\//g' -e 's/__SPACES__/\\\ /g' -e 's/__EOL__/\\/g' >> ${OBJECTDIR}/_ext/1221568840/can18xx8.o.d
+	cat ${OBJECTDIR}/_ext/1018694054/can18xx8.o.temp | sed -e 's/\\\ /__SPACES__/g' -e's/\\$$/__EOL__/g' -e 's/\\/\//g' -e 's/__SPACES__/\\\ /g' -e 's/__EOL__/\\/g' >> ${OBJECTDIR}/_ext/1018694054/can18xx8.o.d
 else
-	cat ${OBJECTDIR}/_ext/1221568840/can18xx8.o.temp >> ${OBJECTDIR}/_ext/1221568840/can18xx8.o.d
+	cat ${OBJECTDIR}/_ext/1018694054/can18xx8.o.temp >> ${OBJECTDIR}/_ext/1018694054/can18xx8.o.d
 endif
 	${RM} __temp_cpp_output__
 ${OBJECTDIR}/CANj.o: CANj.c  nbproject/Makefile-${CND_CONF}.mk
@@ -126,16 +126,16 @@ else
 endif
 	${RM} __temp_cpp_output__
 else
-${OBJECTDIR}/_ext/1221568840/can18xx8.o: ../lib-an738/can18xx8.c  nbproject/Makefile-${CND_CONF}.mk
-	${RM} ${OBJECTDIR}/_ext/1221568840/can18xx8.o.d 
-	${MKDIR} ${OBJECTDIR}/_ext/1221568840 
-	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION)   -I ${MP_CC_DIR}/../h  -fo ${OBJECTDIR}/_ext/1221568840/can18xx8.o   ../lib-an738/can18xx8.c  > ${OBJECTDIR}/_ext/1221568840/can18xx8.err 2>&1 ; if [ $$? -eq 0 ] ; then cat ${OBJECTDIR}/_ext/1221568840/can18xx8.err | sed 's/\(^.*:.*:\)\(Warning\)\(.*$$\)/\1 \2:\3/g' ; else cat ${OBJECTDIR}/_ext/1221568840/can18xx8.err | sed 's/\(^.*:.*:\)\(Error\)\(.*$$\)/\1 \2:\3/g' ; exit 1 ; fi
-	${MP_CPP}  -MMD ${OBJECTDIR}/_ext/1221568840/can18xx8.o.temp ../lib-an738/can18xx8.c __temp_cpp_output__ -D __18F2680 -D __18CXX -I /opt/microchip/mplabc18/v3.40/bin/../h  -D__18F2680
-	printf "%s/" ${OBJECTDIR}/_ext/1221568840 > ${OBJECTDIR}/_ext/1221568840/can18xx8.o.d
+${OBJECTDIR}/_ext/1018694054/can18xx8.o: ../libcan/can18xx8.c  nbproject/Makefile-${CND_CONF}.mk
+	${RM} ${OBJECTDIR}/_ext/1018694054/can18xx8.o.d 
+	${MKDIR} ${OBJECTDIR}/_ext/1018694054 
+	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION)   -I ${MP_CC_DIR}/../h  -fo ${OBJECTDIR}/_ext/1018694054/can18xx8.o   ../libcan/can18xx8.c  > ${OBJECTDIR}/_ext/1018694054/can18xx8.err 2>&1 ; if [ $$? -eq 0 ] ; then cat ${OBJECTDIR}/_ext/1018694054/can18xx8.err | sed 's/\(^.*:.*:\)\(Warning\)\(.*$$\)/\1 \2:\3/g' ; else cat ${OBJECTDIR}/_ext/1018694054/can18xx8.err | sed 's/\(^.*:.*:\)\(Error\)\(.*$$\)/\1 \2:\3/g' ; exit 1 ; fi
+	${MP_CPP}  -MMD ${OBJECTDIR}/_ext/1018694054/can18xx8.o.temp ../libcan/can18xx8.c __temp_cpp_output__ -D __18F2680 -D __18CXX -I /opt/microchip/mplabc18/v3.40/bin/../h  -D__18F2680
+	printf "%s/" ${OBJECTDIR}/_ext/1018694054 > ${OBJECTDIR}/_ext/1018694054/can18xx8.o.d
 ifneq (,$(findstring MINGW32,$(OS_CURRENT)))
-	cat ${OBJECTDIR}/_ext/1221568840/can18xx8.o.temp | sed -e 's/\\\ /__SPACES__/g' -e's/\\$$/__EOL__/g' -e 's/\\/\//g' -e 's/__SPACES__/\\\ /g' -e 's/__EOL__/\\/g' >> ${OBJECTDIR}/_ext/1221568840/can18xx8.o.d
+	cat ${OBJECTDIR}/_ext/1018694054/can18xx8.o.temp | sed -e 's/\\\ /__SPACES__/g' -e's/\\$$/__EOL__/g' -e 's/\\/\//g' -e 's/__SPACES__/\\\ /g' -e 's/__EOL__/\\/g' >> ${OBJECTDIR}/_ext/1018694054/can18xx8.o.d
 else
-	cat ${OBJECTDIR}/_ext/1221568840/can18xx8.o.temp >> ${OBJECTDIR}/_ext/1221568840/can18xx8.o.d
+	cat ${OBJECTDIR}/_ext/1018694054/can18xx8.o.temp >> ${OBJECTDIR}/_ext/1018694054/can18xx8.o.d
 endif
 	${RM} __temp_cpp_output__
 ${OBJECTDIR}/CANj.o: CANj.c  nbproject/Makefile-${CND_CONF}.mk

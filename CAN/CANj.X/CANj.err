@@ -1,2 +1,4 @@
-Warning[2066] CANj.c 93 : type qualifier mismatch in assignment
-Warning[2066] CANj.c 100 : type qualifier mismatch in assignment
+Warning[2066] CANj.c 104 : type qualifier mismatch in assignment
+Warning[2054] CANj.c 112 : suspicious pointer conversion
+Warning[2054] CANj.c 112 : suspicious pointer conversion
+Warning[2054] CANj.c 112 : suspicious pointer conversion

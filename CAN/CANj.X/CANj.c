@@ -2,6 +2,7 @@
 #include <p18f2680.h>
 #include <delays.h>
 #include <usart.h>
+#include "../libcan/can18xx8.h"
 
 
 
@@ -31,6 +32,13 @@
 /////VARIABLES GLOBALES ////
 char x=0;
 int i=0;
+
+long id;
+char data[8];
+char len;
+enum CAN_RX_MSG_FLAGS flag ;
+
+
 
 /////VARIABLES GLOBALES ////
 void high_isr(void);
@@ -84,20 +92,27 @@ void main (void)
 	PORTB = 0b11111111 ;
 	PORTC = 0b11111111 ;
 
+        led =0;
         /* USART */
         OpenUSART( USART_TX_INT_OFF & USART_RX_INT_OFF & USART_ASYNCH_MODE
                 & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_HIGH, 77 );
 
         //INTCONbits.GIE=1;
 
+        CANInitialize(1,4,5,4,2,CAN_CONFIG_ALL_MSG);
+        Delay10KTCYx(200);
         printf("J-Yes you CAN !\n");
+
 
 	while(1)
         {
-        led = led^1;
-        Delay10KTCYx(200);
-        i++;
-        printf("J-test %d\n",i);
+        if (CANIsRxReady())
+        {
+            led = led^1;
+            CANReceiveMessage(&id,data,&len,&flag);
+            
+        }
+        
         }
         
 }
