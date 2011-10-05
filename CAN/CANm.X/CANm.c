@@ -15,6 +15,8 @@
 #pragma config WDT = OFF
 
 #pragma config MCLRE = ON
+        message = "";
+
 
 #pragma config LPT1OSC = OFF
 #pragma config PBADEN = OFF
@@ -30,6 +32,7 @@
 /////VARIABLES GLOBALES ////
 char x=0;
 int i=0;
+char message[8]="Jeremie";
 
 /////VARIABLES GLOBALES ////
 void high_isr(void);
@@ -94,21 +97,28 @@ void main (void)
         OpenUSART( USART_TX_INT_OFF & USART_RX_INT_ON & USART_ASYNCH_MODE
                 & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_HIGH, 77 );
 
-        /* CAN */
-       CANInitialize(1, 4, 5, 4, 2, CAN_CONFIG_ALL_MSG );
-
-
         INTCONbits.GIE=1;
         INTCONbits.PEIE=1;
 
-        printf("CANm Start!\n");
+        /* CAN */
+        CANInitialize(1, 4, 5, 4, 2, CAN_CONFIG_ALL_MSG );
+
+        printf("M start\n");
+        Delay10KTCYx(20);
+
 
 	while(1)
         {
-        led = led^1;
-        Delay10KTCYx(200);
-        i++;
-        printf("m %d\n",i);
+            if(CANIsTxReady())
+            {
+                printf("mPret\n");         
+                CANSendMessage(0xFF, message,7,CAN_TX_PRIORITY_0 & CAN_TX_STD_FRAME & CAN_TX_NO_RTR_FRAME );
+                led = led^1;
+                Delay10KTCYx(200);
+                Delay10KTCYx(200);
+                Delay10KTCYx(200);
+            }
+
         }
         
 }
