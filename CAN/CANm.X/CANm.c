@@ -2,6 +2,7 @@
 #include <p18f2680.h>
 #include <delays.h>
 #include <usart.h>
+#include "../libcan/can18xx8.h"
 
 #define XTAL 12000000
 #define led PORTCbits.RC0
@@ -52,6 +53,13 @@ void low_interrupt(void)
 #pragma interrupt high_isr
 void high_isr(void)
 {
+    if(PIE1bits.RCIE && PIR1bits.RCIF)
+     {
+         char x;
+         x = ReadUSART();
+         WriteUSART(x);
+         PIR1bits.RCIF = 0;
+     }
 
 
 }
@@ -74,7 +82,7 @@ void main (void)
         
         /* Direction des ports I in, O out*/
 	TRISA = 0b11111111 ;
-	TRISB = 0b01111111 ;
+	TRISB = 0b01111011 ;
 	TRISC = 0b11111110;
 	
         /* Etat des sorties */
@@ -83,19 +91,24 @@ void main (void)
 	PORTC = 0b11111111 ;
 
         /* USART */
-        OpenUSART( USART_TX_INT_OFF & USART_RX_INT_OFF & USART_ASYNCH_MODE
+        OpenUSART( USART_TX_INT_OFF & USART_RX_INT_ON & USART_ASYNCH_MODE
                 & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_HIGH, 77 );
 
-        //INTCONbits.GIE=1;
+        /* CAN */
+       CANInitialize(1, 4, 5, 4, 2, CAN_CONFIG_ALL_MSG );
 
-        printf("Yes you CAN !\n");
+
+        INTCONbits.GIE=1;
+        INTCONbits.PEIE=1;
+
+        printf("CANm Start!\n");
 
 	while(1)
         {
         led = led^1;
         Delay10KTCYx(200);
         i++;
-        printf("test %d\n",i);
+        printf("m %d\n",i);
         }
         
 }
