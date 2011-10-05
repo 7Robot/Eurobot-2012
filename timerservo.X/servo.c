@@ -71,6 +71,6 @@ void InterruptServo() {
         if (CurrentServo > CountServo)
             CurrentServo = 0;
 
-        INTCONbits.TMR0IF = 0;
+         INTCONbits.TMR0IF = 0;
     }
 }

@@ -5,8 +5,8 @@
 
 
 
-#ifndef _SERVO_H
-#define _SERVO_H
+//#ifndef _SERVO_H
+//#define _SERVO_H
 
 void OpenServo(int count);
 void WriteServo(int n, int angle);
