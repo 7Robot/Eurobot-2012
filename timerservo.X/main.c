@@ -50,7 +50,7 @@ void low_interrupt(void)
 #pragma code
 
 #pragma interrupt high_isr
-void high_isr(void) //Timer counting 20ms then high then "angle" then low
+void high_isr(void)
 {
     InterruptServo();
 }
@@ -74,14 +74,15 @@ void main (void)
     UCON    = 0 ;           /* Désactive l'USB. */
     UCFG    = 0b00001000 ;
 
-    OpenServo(2);
+    OpenServo(1);
 
 //Variables Globales
 //Début Programme
     while(1){
-        WriteServo(0, 180);
-        WriteServo(1, 40);
-        //Delay100TCYx(1);
+        WriteServo(0, 100);
+        Delay10KTCYx(100);
+        WriteServo(0, 10);
+        Delay10KTCYx(100);
     }
 }
 
