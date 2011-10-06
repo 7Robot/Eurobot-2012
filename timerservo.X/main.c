@@ -74,14 +74,14 @@ void main (void)
     UCON    = 0 ;           /* Désactive l'USB. */
     UCFG    = 0b00001000 ;
 
-    OpenServo(1);
+    OpenServo(2);
 
 //Variables Globales
 //Début Programme
     while(1){
-        WriteServo(0, 100);
+        WriteServo(1, 100);
         Delay10KTCYx(100);
-        WriteServo(0, 10);
+        WriteServo(1, 10);
         Delay10KTCYx(100);
     }
 }
