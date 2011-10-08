@@ -33,9 +33,9 @@
 char x=0;
 int i=0;
 
-long id;
-char data[8];
-char len;
+long id=0;
+char data[8]="";
+char len=0;
 enum CAN_RX_MSG_FLAGS flag ;
 
 
@@ -99,18 +99,37 @@ void main (void)
 
         //INTCONbits.GIE=1;
 
-        CANInitialize(1,4,5,4,2,CAN_CONFIG_ALL_MSG);
+        CANInitialize(1,4,5,4,2,CAN_CONFIG_VALID_STD_MSG );//jeje modif
         Delay10KTCYx(200);
-        printf("J-Yes you CAN !\n");
 
+        //confif des mask et filtres
+        // Set CAN module into configuration mode
+        CANSetOperationMode(CAN_OP_MODE_CONFIG);
+        // Set Buffer 1 Mask value
+        CANSetMask(CAN_MASK_B1, 0b1111,CAN_CONFIG_STD_MSG);
+        // Set Buffer 2 Mask value
+        CANSetMask(CAN_MASK_B2, 0b1111,CAN_CONFIG_STD_MSG );
+        // Set Buffer 1 Filter values
+        CANSetFilter(CAN_FILTER_B1_F1,0b1101,CAN_CONFIG_STD_MSG );
+        CANSetFilter(CAN_FILTER_B1_F2,0b0101,CAN_CONFIG_STD_MSG );
+        CANSetFilter(CAN_FILTER_B2_F1,0b0000,CAN_CONFIG_STD_MSG );
+        CANSetFilter(CAN_FILTER_B2_F2,0b1110,CAN_CONFIG_STD_MSG );
+        CANSetFilter(CAN_FILTER_B2_F3,0b1101,CAN_CONFIG_STD_MSG );
+        CANSetFilter(CAN_FILTER_B2_F4,0b1111,CAN_CONFIG_STD_MSG );
+
+        // Set CAN module into Normal mode
+        CANSetOperationMode(CAN_OP_MODE_NORMAL);
+
+        Delay10KTCYx(200);
+
+        printf("J-Yes you CAN !\n");
 
 	while(1)
         {
         if (CANIsRxReady())
         {
             led = led^1;
-            CANReceiveMessage(&id,data,&len,&flag);
-            
+            CANReceiveMessage(&id,data,&len,&flag);   
         }
         
         }
