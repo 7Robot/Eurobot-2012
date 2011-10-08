@@ -1,6 +1,30 @@
-#include <timers.h>
-#include <p18f2550.h>
+/*
+ *  servo.c - C18 library to control up to eight servomotors on the PIC18F
+ *  family from Microchip.
+ *
+ *  Tested with PIC18F2550 under MPLAB X.
+ *
+ *  2011-10-05 - First version by Ken Hasselmann and Martin d'Allens.
+ *
+ *  This library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
+#include <timers.h>
+
+void OpenServo(int count);
+void WriteServo(int n, int angle);
+void InterruptServo();
 
 unsigned int AngleServo[8] = {0};
 int CountServo = 0;
@@ -25,11 +49,17 @@ void OpenServo(int count) {
             & T0_PS_1_1 /* Internal oscillator of 8MHz */);
 }
 
+/*
+ * Change the angle of servo number n (pin RBn).
+ */
 void WriteServo(int n, int angle) {
     if (0 <= n && n < CountServo && 0 <= angle && angle < 180)
         AngleServo[n] = angle;
 }
 
+/*
+ * Don't forget to call this function from the right interrupt vector.
+ */
 void InterruptServo() {
     if (INTCONbits.TMR0IE && INTCONbits.TMR0IF) {
         if (CurrentServo > 0) {
@@ -41,15 +71,15 @@ void InterruptServo() {
             // Set current (CurrentServo) pin to 1.
             PORTB |= 1 << CurrentServo;
 
-            WriteTimer0(65535 /* Max int */
-                    /* Maximum width of 2.1ms. */
-                    - AngleServo[CurrentServo] * 2 * ((2100 - 900) / 180)
-                    /* Minimum width of 0.9ms. */
-                    - 900 * 2 /* 2 = 8MHz / 4 / 1ms  */
+            WriteTimer0(65534 /* Max int */
+                    /* Maximum width of 2.4ms. */
+                    - AngleServo[CurrentServo] * 2 * ((2400 - 544) / 180)
+                    /* Minimum width of 544µs. */
+                    - 544 * 2 /* 2 = 8MHz / 4 (proc. freq) / 1µs  */
                     );
             // Between 0.9ms and 2.1ms.
         } else {
-            WriteTimer0(65535 - 20000 * 2); // 20ms
+            WriteTimer0(65535 - 20000 * 2); // Minimum of 20ms between pulses.
         }
 
         CurrentServo++;
