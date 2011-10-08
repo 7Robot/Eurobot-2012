@@ -1,14 +1,17 @@
-***  Code source des projets développés par le Club 7Robot 2012 ***
+===  Projets développés par le Club 7Robot pour la Coupe de France de robotique 2012 ===
 
---> Code Arduino 
-	--> Gestion AX12
+    Site du club : http://www.bde.enseeiht.fr/clubs/robot/
+Email de contact : 7robot@list.bde.enseeiht.fr
 
---> Code Pic Divers 
-	--> Gestion AX12
-	--> Ecriture Lecture eeprom
-	--> Conv ana/num
-	--> PID et Asserv
-	
+Sauf mention contraire ces codes souerces sont réutilisables librement selon les termes de la licence GPL v3 ou ultérieure.
 
---> Code Pic Eurobot 2012
-	--> A venir !!
+Les dossier ".X" sont des projets pour MPLAB X, majoritairement avec la librairie C18 Lite.
+
+
+Liste non exhaustive des sources (qui font souvent l'objet de tutoriaux sur notre site web) :
+
+- Librairie Arduino pour la gestion des servomoteurs AX-12 (Dynamixel) de Robotis
+- Libraire C18 pour les AX-12
+- Lecture et écriture d'EEPROM sur PIC
+- Conversions analogique-numérique sur PIC
+- Asservissement PID sur PIC pour les moteurs de propulsion de notre robot

@@ -48,17 +48,17 @@ OS_CURRENT="$(shell uname -s)"
 # If you open this project with MPLAB X in the new host, this         #
 # makefile will be regenerated and the paths will be corrected.       #
 #######################################################################
-MP_CC=/opt/microchip/mplabc18/v3.40/bin/mcc18
+MP_CC=/opt/microchip/mplabc18/v3.36/bin/mcc18
 # MP_BC is not defined
-MP_AS=/opt/microchip/mplabc18/v3.40/bin/../mpasm/MPASMWIN
-MP_LD=/opt/microchip/mplabc18/v3.40/bin/mplink
-MP_AR=/opt/microchip/mplabc18/v3.40/bin/mplib
+MP_AS=/opt/microchip/mplabc18/v3.36/bin/../mpasm/MPASMWIN
+MP_LD=/opt/microchip/mplabc18/v3.36/bin/mplink
+MP_AR=/opt/microchip/mplabc18/v3.36/bin/mplib
 # MP_BC is not defined
-MP_CC_DIR=/opt/microchip/mplabc18/v3.40/bin
+MP_CC_DIR=/opt/microchip/mplabc18/v3.36/bin
 # MP_BC_DIR is not defined
-MP_AS_DIR=/opt/microchip/mplabc18/v3.40/bin/../mpasm
-MP_LD_DIR=/opt/microchip/mplabc18/v3.40/bin
-MP_AR_DIR=/opt/microchip/mplabc18/v3.40/bin
+MP_AS_DIR=/opt/microchip/mplabc18/v3.36/bin/../mpasm
+MP_LD_DIR=/opt/microchip/mplabc18/v3.36/bin
+MP_AR_DIR=/opt/microchip/mplabc18/v3.36/bin
 # MP_BC_DIR is not defined
 
 # This makefile will use a C preprocessor to generate dependency files
@@ -105,7 +105,7 @@ ${OBJECTDIR}/main.o: main.c  nbproject/Makefile-${CND_CONF}.mk
 	${RM} ${OBJECTDIR}/main.o.d 
 	${MKDIR} ${OBJECTDIR} 
 	${MP_CC} $(MP_EXTRA_CC_PRE) -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -p$(MP_PROCESSOR_OPTION)   -I ${MP_CC_DIR}/../h  -fo ${OBJECTDIR}/main.o   main.c  > ${OBJECTDIR}/main.err 2>&1 ; if [ $$? -eq 0 ] ; then cat ${OBJECTDIR}/main.err | sed 's/\(^.*:.*:\)\(Warning\)\(.*$$\)/\1 \2:\3/g' ; else cat ${OBJECTDIR}/main.err | sed 's/\(^.*:.*:\)\(Error\)\(.*$$\)/\1 \2:\3/g' ; exit 1 ; fi
-	${MP_CPP}  -MMD ${OBJECTDIR}/main.o.temp main.c __temp_cpp_output__ -D __18F2550 -D __18CXX -I /opt/microchip/mplabc18/v3.40/bin/../h  -D__18F2550
+	${MP_CPP}  -MMD ${OBJECTDIR}/main.o.temp main.c __temp_cpp_output__ -D __18F2550 -D __18CXX -I /opt/microchip/mplabc18/v3.36/bin/../h  -D__18F2550
 	printf "%s/" ${OBJECTDIR} > ${OBJECTDIR}/main.o.d
 ifneq (,$(findstring MINGW32,$(OS_CURRENT)))
 	cat ${OBJECTDIR}/main.o.temp | sed -e 's/\\\ /__SPACES__/g' -e's/\\$$/__EOL__/g' -e 's/\\/\//g' -e 's/__SPACES__/\\\ /g' -e 's/__EOL__/\\/g' >> ${OBJECTDIR}/main.o.d
@@ -118,7 +118,7 @@ ${OBJECTDIR}/main.o: main.c  nbproject/Makefile-${CND_CONF}.mk
 	${RM} ${OBJECTDIR}/main.o.d 
 	${MKDIR} ${OBJECTDIR} 
 	${MP_CC} $(MP_EXTRA_CC_PRE) -p$(MP_PROCESSOR_OPTION)   -I ${MP_CC_DIR}/../h  -fo ${OBJECTDIR}/main.o   main.c  > ${OBJECTDIR}/main.err 2>&1 ; if [ $$? -eq 0 ] ; then cat ${OBJECTDIR}/main.err | sed 's/\(^.*:.*:\)\(Warning\)\(.*$$\)/\1 \2:\3/g' ; else cat ${OBJECTDIR}/main.err | sed 's/\(^.*:.*:\)\(Error\)\(.*$$\)/\1 \2:\3/g' ; exit 1 ; fi
-	${MP_CPP}  -MMD ${OBJECTDIR}/main.o.temp main.c __temp_cpp_output__ -D __18F2550 -D __18CXX -I /opt/microchip/mplabc18/v3.40/bin/../h  -D__18F2550
+	${MP_CPP}  -MMD ${OBJECTDIR}/main.o.temp main.c __temp_cpp_output__ -D __18F2550 -D __18CXX -I /opt/microchip/mplabc18/v3.36/bin/../h  -D__18F2550
 	printf "%s/" ${OBJECTDIR} > ${OBJECTDIR}/main.o.d
 ifneq (,$(findstring MINGW32,$(OS_CURRENT)))
 	cat ${OBJECTDIR}/main.o.temp | sed -e 's/\\\ /__SPACES__/g' -e's/\\$$/__EOL__/g' -e 's/\\/\//g' -e 's/__SPACES__/\\\ /g' -e 's/__EOL__/\\/g' >> ${OBJECTDIR}/main.o.d
