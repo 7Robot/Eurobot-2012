@@ -32,7 +32,15 @@
 /////VARIABLES GLOBALES ////
 char x=0;
 int i=0;
-char message[8]="Jeremie";
+
+char message1[8]="Jeremie";
+unsigned long id1=1;
+char message2[8]="7Robot";
+unsigned long id2=2;
+char message3[8]="Foy";
+unsigned long id3=4;
+char message4[8]="Gears3";
+unsigned long id4=255;
 
 /////VARIABLES GLOBALES ////
 void high_isr(void);
@@ -105,19 +113,48 @@ void main (void)
 
         printf("M start\n");
         Delay10KTCYx(20);
-
-
+       
+    
+        led=0;
 	while(1)
         {
             if(CANIsTxReady())
             {
                 printf("mPret\n");         
-                CANSendMessage(0xFF, message,7,CAN_TX_PRIORITY_0 & CAN_TX_STD_FRAME & CAN_TX_NO_RTR_FRAME );
+                CANSendMessage(id1, message1,7,CAN_TX_PRIORITY_0 & CAN_TX_STD_FRAME & CAN_TX_NO_RTR_FRAME );
                 led = led^1;
                 Delay10KTCYx(200);
                 Delay10KTCYx(200);
                 Delay10KTCYx(200);
             }
+            if(CANIsTxReady())
+            {
+                printf("mPret\n");
+                CANSendMessage(id2, message2,7,CAN_TX_PRIORITY_0 & CAN_TX_STD_FRAME & CAN_TX_NO_RTR_FRAME );
+                led = led^1;
+                Delay10KTCYx(200);
+                Delay10KTCYx(200);
+                Delay10KTCYx(200);
+            }
+            if(CANIsTxReady())
+            {
+                printf("mPret\n");
+                CANSendMessage(id3, message3,7,CAN_TX_PRIORITY_0 & CAN_TX_STD_FRAME & CAN_TX_NO_RTR_FRAME );
+                led = led^1;
+                Delay10KTCYx(200);
+                Delay10KTCYx(200);
+                Delay10KTCYx(200);
+            }
+            if(CANIsTxReady())
+            {
+                printf("mPret\n");
+                CANSendMessage(id4, message4,7,CAN_TX_PRIORITY_0 & CAN_TX_STD_FRAME & CAN_TX_NO_RTR_FRAME );
+                led = led^1;
+                Delay10KTCYx(200);
+                Delay10KTCYx(200);
+                Delay10KTCYx(200);
+            }
+
 
         }
         

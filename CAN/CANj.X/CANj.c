@@ -32,7 +32,7 @@
 /////VARIABLES GLOBALES ////
 char x=0;
 int i=0;
-
+int cp=0;
 long id=0;
 char data[8]="";
 char len=0;
@@ -62,7 +62,12 @@ void low_interrupt(void)
 #pragma interrupt high_isr
 void high_isr(void)
 {
+    if (PIE3bits.RXB1IE & PIR3bits.RXB1IF)
+    {
+        cp=cp++;
+        PIR3bits.RXB1IF=0;
 
+    }
 
 }
 
@@ -102,6 +107,16 @@ void main (void)
         CANInitialize(1,4,5,4,2,CAN_CONFIG_VALID_STD_MSG );//jeje modif
         Delay10KTCYx(200);
 
+         /*Config interupt CAN- Buffeur 1*/
+
+        IPR3bits.RXB1IP=1;// : priorité haute par defaut du buff 1
+        PIE3bits.RXB1IE=1;//autorise int sur buff1
+        PIR3bits.RXB1IF=0;//mise a 0 du flag
+
+        /*Config interupt General*/
+        INTCONbits.GIE=1;
+        INTCONbits.PEIE=1;
+
         //confif des mask et filtres
         // Set CAN module into configuration mode
         CANSetOperationMode(CAN_OP_MODE_CONFIG);
@@ -110,12 +125,12 @@ void main (void)
         // Set Buffer 2 Mask value
         CANSetMask(CAN_MASK_B2, 0b1111,CAN_CONFIG_STD_MSG );
         // Set Buffer 1 Filter values
-        CANSetFilter(CAN_FILTER_B1_F1,0b1101,CAN_CONFIG_STD_MSG );
-        CANSetFilter(CAN_FILTER_B1_F2,0b0101,CAN_CONFIG_STD_MSG );
+        CANSetFilter(CAN_FILTER_B1_F1,0b0000,CAN_CONFIG_STD_MSG );
+        CANSetFilter(CAN_FILTER_B1_F2,0b0000,CAN_CONFIG_STD_MSG );
         CANSetFilter(CAN_FILTER_B2_F1,0b0000,CAN_CONFIG_STD_MSG );
-        CANSetFilter(CAN_FILTER_B2_F2,0b1110,CAN_CONFIG_STD_MSG );
-        CANSetFilter(CAN_FILTER_B2_F3,0b1101,CAN_CONFIG_STD_MSG );
-        CANSetFilter(CAN_FILTER_B2_F4,0b1111,CAN_CONFIG_STD_MSG );
+        CANSetFilter(CAN_FILTER_B2_F2,0b0000,CAN_CONFIG_STD_MSG );
+        CANSetFilter(CAN_FILTER_B2_F3,0b0000,CAN_CONFIG_STD_MSG );
+        CANSetFilter(CAN_FILTER_B2_F4,0b0001,CAN_CONFIG_STD_MSG );
 
         // Set CAN module into Normal mode
         CANSetOperationMode(CAN_OP_MODE_NORMAL);

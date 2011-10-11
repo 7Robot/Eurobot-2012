@@ -1,4 +1,4 @@
-CANj.c:125:Warning [2066] type qualifier mismatch in assignment
-CANj.c:132:Warning [2054] suspicious pointer conversion
-CANj.c:132:Warning [2054] suspicious pointer conversion
-CANj.c:132:Warning [2054] suspicious pointer conversion
+CANj.c:140:Warning [2066] type qualifier mismatch in assignment
+CANj.c:147:Warning [2054] suspicious pointer conversion
+CANj.c:147:Warning [2054] suspicious pointer conversion
+CANj.c:147:Warning [2054] suspicious pointer conversion
