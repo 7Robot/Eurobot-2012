@@ -6,7 +6,7 @@
 
 
 
-#define XTAL 12000000
+#define XTAL 10000000
 #define led PORTCbits.RC0
 
 #pragma config OSC = HS
@@ -64,9 +64,14 @@ void high_isr(void)
 {
     if (PIE3bits.RXB1IE & PIR3bits.RXB1IF)
     {
-        cp=cp++;
+        CANReceiveMessage(&id,data,&len,&flag);
+        led = led^1;
         PIR3bits.RXB1IF=0;
-
+    }
+        if (PIE3bits.RXB0IE & PIR3bits.RXB0IF)
+    {
+        CANReceiveMessage(&id,data,&len,&flag);
+        PIR3bits.RXB0IF=0;
     }
 
 }
@@ -113,6 +118,12 @@ void main (void)
         PIE3bits.RXB1IE=1;//autorise int sur buff1
         PIR3bits.RXB1IF=0;//mise a 0 du flag
 
+                 /*Config interupt CAN- Buffeur 0*/
+
+        IPR3bits.RXB0IP=1;// : priorité haute par defaut du buff 1
+        PIE3bits.RXB0IE=1;//autorise int sur buff1
+        PIR3bits.RXB0IF=0;//mise a 0 du flag
+
         /*Config interupt General*/
         INTCONbits.GIE=1;
         INTCONbits.PEIE=1;
@@ -125,12 +136,12 @@ void main (void)
         // Set Buffer 2 Mask value
         CANSetMask(CAN_MASK_B2, 0b1111,CAN_CONFIG_STD_MSG );
         // Set Buffer 1 Filter values
-        CANSetFilter(CAN_FILTER_B1_F1,0b0000,CAN_CONFIG_STD_MSG );
+        CANSetFilter(CAN_FILTER_B1_F1,0b0011,CAN_CONFIG_STD_MSG );
         CANSetFilter(CAN_FILTER_B1_F2,0b0000,CAN_CONFIG_STD_MSG );
-        CANSetFilter(CAN_FILTER_B2_F1,0b0000,CAN_CONFIG_STD_MSG );
+        CANSetFilter(CAN_FILTER_B2_F1,0b1100,CAN_CONFIG_STD_MSG );
         CANSetFilter(CAN_FILTER_B2_F2,0b0000,CAN_CONFIG_STD_MSG );
         CANSetFilter(CAN_FILTER_B2_F3,0b0000,CAN_CONFIG_STD_MSG );
-        CANSetFilter(CAN_FILTER_B2_F4,0b0001,CAN_CONFIG_STD_MSG );
+        CANSetFilter(CAN_FILTER_B2_F4,0b0000,CAN_CONFIG_STD_MSG );
 
         // Set CAN module into Normal mode
         CANSetOperationMode(CAN_OP_MODE_NORMAL);
@@ -141,11 +152,6 @@ void main (void)
 
 	while(1)
         {
-        if (CANIsRxReady())
-        {
-            led = led^1;
-            CANReceiveMessage(&id,data,&len,&flag);   
-        }
         
         }
         

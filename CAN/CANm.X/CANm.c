@@ -4,7 +4,7 @@
 #include <usart.h>
 #include "../libcan/can18xx8.h"
 
-#define XTAL 12000000
+#define XTAL 10000000
 #define led PORTCbits.RC0
 
 #pragma config OSC = HS
@@ -34,13 +34,13 @@ char x=0;
 int i=0;
 
 char message1[8]="Jeremie";
-unsigned long id1=1;
+unsigned long id1=0b0011;
 char message2[8]="7Robot";
-unsigned long id2=2;
+unsigned long id2=0b1100;
 char message3[8]="Foy";
-unsigned long id3=4;
+unsigned long id3=0b1111;
 char message4[8]="Gears3";
-unsigned long id4=255;
+unsigned long id4=0b1111;
 
 /////VARIABLES GLOBALES ////
 void high_isr(void);
