@@ -64,13 +64,30 @@ void high_isr(void)
 {
     if (PIE3bits.RXB1IE & PIR3bits.RXB1IF)
     {
+        cp=0;
+       
+       while(CANIsRxReady()){
         CANReceiveMessage(&id,data,&len,&flag);
+        cp=cp++;
+        if (cp==1){
+            led=led;
+            cp=cp;
+        }
+
+        }
+        
         led = led^1;
         PIR3bits.RXB1IF=0;
+        PIR3bits.ERRIF=0;
+
     }
         if (PIE3bits.RXB0IE & PIR3bits.RXB0IF)
     {
+
+        while(CANIsRxReady()){
         CANReceiveMessage(&id,data,&len,&flag);
+        }
+
         PIR3bits.RXB0IF=0;
     }
 
