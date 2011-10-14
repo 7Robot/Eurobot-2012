@@ -120,7 +120,7 @@ void main (void)
         {
             if(CANIsTxReady())
             {
-                printf("mPret\n");         
+                //printf("mPret\n");
                 CANSendMessage(id1, message1,7,CAN_TX_PRIORITY_0 & CAN_TX_STD_FRAME & CAN_TX_NO_RTR_FRAME );
                 led = led^1;
                 Delay10KTCYx(200);
@@ -129,7 +129,7 @@ void main (void)
             }
             if(CANIsTxReady())
             {
-                printf("mPret\n");
+                //printf("mPret\n");
                 CANSendMessage(id2, message2,7,CAN_TX_PRIORITY_0 & CAN_TX_STD_FRAME & CAN_TX_NO_RTR_FRAME );
                 led = led^1;
                 Delay10KTCYx(200);
@@ -138,7 +138,7 @@ void main (void)
             }
             if(CANIsTxReady())
             {
-                printf("mPret\n");
+                //printf("mPret\n");
                 CANSendMessage(id3, message3,7,CAN_TX_PRIORITY_0 & CAN_TX_STD_FRAME & CAN_TX_NO_RTR_FRAME );
                 led = led^1;
                 Delay10KTCYx(200);
@@ -147,7 +147,7 @@ void main (void)
             }
             if(CANIsTxReady())
             {
-                printf("mPret\n");
+                //printf("mPret\n");
                 CANSendMessage(id4, message4,7,CAN_TX_PRIORITY_0 & CAN_TX_STD_FRAME & CAN_TX_NO_RTR_FRAME );
                 led = led^1;
                 Delay10KTCYx(200);
