@@ -10,11 +10,8 @@
 #pragma config FCMEN = OFF
 #pragma config IESO = OFF
 #pragma config PWRT = OFF
-
 #pragma config WDT = OFF
-
 #pragma config MCLRE = ON
-
 #pragma config LPT1OSC = OFF
 #pragma config PBADEN = OFF
 #pragma config DEBUG = OFF
@@ -47,8 +44,8 @@ void high_isr(void)
     if(PIE1bits.RCIE && PIR1bits.RCIF)
     {
         x = ReadUSART();
-        PIR1bits.RCIF = 0;
     }
+       
 }
 
 #pragma interrupt low_isr
@@ -75,9 +72,11 @@ void main (void)
 	PORTB = 0b11111111 ;
 	PORTC = 0b01111111 ;
 
+        /*Config Rs232*/
    OpenUSART( USART_TX_INT_OFF & USART_RX_INT_ON & USART_ASYNCH_MODE
                 & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_HIGH, 63 );
 
+    /*Autorisation des Imteruptions Générales */
     RCONbits.IPEN = 1;
     INTCONbits.GIE = 1; /* Autorise interruptions haut niveau. */
     INTCONbits.PEIE = 1; /*Autorise interruptions bas niveau.*/
@@ -85,9 +84,9 @@ void main (void)
     while(1)
     {
         printf("hello\n");
-          led=1;
-          Delay10KTCYx(200);
-          led=0;
-          Delay10KTCYx(200);
+        led=1;
+        Delay10KTCYx(200);
+        led=0;
+        Delay10KTCYx(200);
     }
 }
