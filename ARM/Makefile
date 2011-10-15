@@ -1,25 +1,17 @@
 CC=agcc
-CFLAGS=-W -Wall
-LDFLAGS=
-EXEC=gui
+CFLAGS=-W -Wall -Iinclude -lpthread
+LDFLAGS=-L lib -l freetype -l ts -lpthread
 
-all: $(EXEC)
+all: bin/gui
 
-gui: gui.o
-	$(CC) $(CFLAGS) -o bin/gui lib/gui.o
+bin/gui: obj/gui.o obj/fb.o obj/ft.o obj/ts.o
+	$(CC) $(LDFLAGS) -o $@ $^
 
-gui.o:
-	$(CC) $(CFLAGS) -c src/gui.c -o lib/gui.o
+obj/%.o: src/%.c include/%.h
+	$(CC) $(CFLAGS) -o $@ -c $<
 
-ft.o:
+clean:
+	rm obj/*.o
 
-
-ts.o:
-
-
-
-
-
-
-
-
+mrproper: clean
+	rm bin/*
