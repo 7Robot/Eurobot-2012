@@ -2,7 +2,7 @@
 #include <p18f2680.h>
 #include <delays.h>
 #include <usart.h>
-
+#include "../CAN/libcan/can18xx8.h"
 
 #define led PORTCbits.RC0
 
@@ -21,6 +21,11 @@
 
 /////VARIABLES GLOBALES ////
 char x;
+
+long id=0;
+char data[8]="";
+char len=0;
+enum CAN_RX_MSG_FLAGS flag ;
 
 /////*INTERRUPTIONS*/////
 void high_isr(void);
@@ -76,17 +81,24 @@ void main (void)
    OpenUSART( USART_TX_INT_OFF & USART_RX_INT_ON & USART_ASYNCH_MODE
                 & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_HIGH, 63 );
 
+         /*Config CAN pour quartz 10M*/
+   CANInitialize(1,1,5,4,2,CAN_CONFIG_ALL_VALID_MSG);
+   Delay10KTCYx(200);
+
+
     /*Autorisation des Imteruptions Générales */
     RCONbits.IPEN = 1;
     INTCONbits.GIE = 1; /* Autorise interruptions haut niveau. */
     INTCONbits.PEIE = 1; /*Autorise interruptions bas niveau.*/
 
+    led=0;
+    
     while(1)
     {
-        printf("hello\n");
-        led=1;
-        Delay10KTCYx(200);
-        led=0;
-        Delay10KTCYx(200);
+        if (CANIsRxReady())
+        {
+            CANReceiveMessage(&id,data,&len,&flag);
+            led=led^1;
+        }
     }
 }
