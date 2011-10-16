@@ -23,7 +23,8 @@
 char x;
 
 long id=0;
-char data[8]="";
+char data[9]="";
+
 char len=0;
 enum CAN_RX_MSG_FLAGS flag ;
 
@@ -79,10 +80,10 @@ void main (void)
 
         /*Config Rs232*/
    OpenUSART( USART_TX_INT_OFF & USART_RX_INT_ON & USART_ASYNCH_MODE
-                & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_HIGH, 63 );
+                & USART_EIGHT_BIT & USART_CONT_RX & USART_BRGH_HIGH, 119 );
 
          /*Config CAN pour quartz 10M*/
-   CANInitialize(1,1,5,4,2,CAN_CONFIG_ALL_VALID_MSG);
+   CANInitialize(1,1,3,3,1,CAN_CONFIG_ALL_VALID_MSG);
    Delay10KTCYx(200);
 
 

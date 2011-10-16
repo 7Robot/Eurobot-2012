@@ -126,7 +126,7 @@ void main (void)
 
         //INTCONbits.GIE=1;
 
-        CANInitialize(1,4,5,4,2,CAN_CONFIG_VALID_STD_MSG );//jeje modif
+        CANInitialize(1,2,6,3,2,CAN_CONFIG_VALID_STD_MSG );//jeje modif
         Delay10KTCYx(200);
 
          /*Config interupt CAN- Buffeur 1*/

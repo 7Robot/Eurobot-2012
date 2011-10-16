@@ -109,7 +109,7 @@ void main (void)
         INTCONbits.PEIE=1;
 
         /* CAN */
-        CANInitialize(1, 4, 5, 4, 2, CAN_CONFIG_ALL_MSG );
+        CANInitialize(1, 2, 6, 3, 2, CAN_CONFIG_ALL_MSG );//1, 4, 5, 4, 2,
 
         printf("M start\n");
         Delay10KTCYx(20);
