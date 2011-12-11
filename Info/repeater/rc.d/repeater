@@ -1,0 +1,50 @@
+#!/bin/bash
+
+PRG_NAME="Eurobot repeater"
+LOGFILE=/home/n7/promo2014/bouttie/Documents/git/info/Info/repeater/var/repeater.log
+PIDFILE=/home/n7/promo2014/bouttie/Documents/git/info/Info/repeater/var/repeater.pid
+PID=$(cat $PIDFILE 2> /dev/null)
+CMD=../main
+
+USECOLOR=yes
+. functions
+
+case "$1" in
+	start)
+		stat_busy "Start $PRG_NAME"
+		if [ -z "$PID" ]; then
+			$CMD -p $PIDFILE -l $LOGFILE
+			if [ $? -eq 0 ]; then
+				stat_done
+			else
+				stat_fail
+				exit 1
+			fi
+		else
+			stat_fail
+			exit 1
+		fi
+		;;
+	stop)
+		stat_busy "Stopping $PRG_NAME"
+		if [ -n "$PID" ]; then
+			kill $PID &> /dev/null
+			if [ $? -gt 0 ]; then
+				stat_fail
+				exit 1
+			else
+				rm $PIDFILE &> /dev/null
+				stat_done
+			fi
+		else
+			stat_fail
+			exit 1
+		fi
+		;;
+	restart)
+		$0 stop
+		$0 start
+	;;
+	*)
+		echo "usage: $0 {start|stop|restart}"
+esac
