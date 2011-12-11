@@ -1,0 +1,278 @@
+#include <stdio.h> // printf
+#include <stdlib.h> // exit
+#include <errno.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h> // memset
+#include <unistd.h>
+#include <signal.h>
+#include <syslog.h>
+
+//#define OPEN_MAX 256
+#include <limits.h>
+
+#define SYSLOG
+
+volatile int run;
+
+int show_peer_address(int sock)
+{
+	struct sockaddr_in address;
+	socklen_t length;
+
+	length = sizeof(struct sockaddr_in);
+	if (getpeername(sock, (struct sockaddr*)&address, &length) < 0) {
+#ifdef SYSLOG
+		syslog(LOG_ERR, "getsockname: %m");
+#else
+		perror("getsockname");
+#endif
+		return -1;
+	}
+#ifdef SYSLOG
+	syslog(LOG_INFO, "IP = %s, Port = %u\n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+#else
+	fprintf(stdout, "IP = %s, Port = %u\n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+#endif
+
+	return 0;
+}
+
+int show_sock_address(int sock)
+{
+	struct sockaddr_in address;
+	socklen_t length;
+
+	length = sizeof(struct sockaddr_in);
+	if (getsockname(sock, (struct sockaddr*)&address, &length) < 0) {
+		syslog(LOG_ERR, "getsockname: %m");
+		return -1;
+	}
+	syslog(LOG_INFO, "IP = %s, Port = %u\n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+
+	return 0;
+}
+
+int create_socket_stream(const char* hostname, const char* servname)
+{
+	/*      struct addrinfo {
+     *          int              ai_flags;		Input flags
+     *          int              ai_family;		Protocol family for socket
+     *          int              ai_socktype;	Socket type
+     *          int              ai_protocol;	Protocol for socket
+     *          size_t           ai_addrlen;	Length of socket address
+     *          struct sockaddr *ai_addr;		Socket address for socket
+     *          char            *ai_canonname;	Canonical name for service location
+     *			struct addrinfo *ai_next;		Pointer to next in list
+     *      };
+	 */
+
+	struct addrinfo hints;
+	struct addrinfo *result, *rp;
+	int sfd, s;
+
+	memset(&hints, 0, sizeof(struct addrinfo)); /* init hints */
+	hints.ai_flags = AI_PASSIVE;				/* Not only loopback if hostname is null */
+	hints.ai_family = AF_INET;					/* AF_UNSPEC/AF_INET/AF_INET6 */
+	hints.ai_socktype = SOCK_STREAM;			/* STREAM(TCP), DGRAM(UDP), SEQPACKET(?) */
+	hints.ai_protocol = 0;						/* Any protocol */
+	hints.ai_canonname = NULL;
+	hints.ai_addr = NULL;
+	hints.ai_next = NULL;
+
+	/* int getaddrinfo(const char *node, 
+	 * 							const char *service,
+	 * 							const struct addrinfo *hints,
+	 * 							struct addrinfo **res);
+	 */
+	s = getaddrinfo(hostname, servname, &hints, &result);
+	if (s != 0) {
+#ifdef SYSLOG
+		syslog(LOG_ERR, "Error: %s\n", gai_strerror(s));
+#else
+		fprintf(stderr, "Error: %s\n", gai_strerror(s));
+#endif
+		return -1;
+	}
+
+	for (rp = result; rp != NULL; rp = rp->ai_next) {
+
+		sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+		
+		if (sfd == -1) {
+#ifdef SYSLOG
+			syslog(LOG_ERR, "socket: %m");
+#else
+			perror("socket");
+#endif
+			continue;
+		}
+
+		if (bind(sfd, rp->ai_addr, rp->ai_addrlen) == 0) {
+			break;	/* Success */
+		} else {
+#ifdef SYSLOG
+			syslog(LOG_ERR, "bind: %m");
+			syslog(LOG_ERR, "Tried address : %s\n", inet_ntoa(((const struct sockaddr_in*)(rp->ai_addr))->sin_addr));
+#else
+			perror("bind");
+			fprintf(stdout, "Tried address : %s\n", inet_ntoa(((const struct sockaddr_in*)(rp->ai_addr))->sin_addr));
+#endif
+		}
+
+		close(sfd);
+	}
+	freeaddrinfo(result);	/* No longer needed */
+
+	if (rp == NULL) {	/* No address succeeded */
+		syslog(LOG_ERR, "Error: Could not bind\n");
+		return -1;
+	}
+
+	return sfd;
+}
+
+void process_connection(int sock)
+{
+	struct sockaddr_in address;
+	socklen_t length;
+	char buffer[256];
+
+	length = sizeof(struct sockaddr_in);
+	if (getpeername(sock, (struct sockaddr*)(&address), &length) < 0) {
+		syslog(LOG_ERR, "getpeername: %m");
+		return;
+	}
+
+	sprintf(buffer, "IP = %s, Port %u\n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+
+	syslog(LOG_INFO, "Connection : local ");
+	show_sock_address(sock);
+	syslog(LOG_INFO, "            remote %s", buffer);
+
+	write(sock, "Your address : ", 15);
+	write(sock, buffer, strlen(buffer));
+}
+
+int tcp_server(const char* hostname, const char* servname)
+{
+	int listening_socket;
+	int connected_socket;
+	struct sockaddr_in address;
+	socklen_t length;
+
+	listening_socket = create_socket_stream(hostname, servname);
+	if (listening_socket < 0)
+		return -1;
+
+	if (listen(listening_socket, 8) < 0) {	/* (Socket, Waiting list size) */
+		//~ perror("listen");
+		syslog(LOG_ERR, "listen: %m");
+		return -1;
+	}
+
+	//~ fprintf(stdout, "Listening on : ");
+	syslog(LOG_INFO, "Listening on : ");
+	show_sock_address(listening_socket);
+	
+	do {
+		length = sizeof(struct sockaddr_in);
+		connected_socket = accept(listening_socket, (struct sockaddr*)(&address), &length);
+		if (connected_socket < 0 && errno != EINTR) { /* If interrupted, run knows what must be done, it's not an error */
+			syslog(LOG_ERR, "accept: %m");
+			close(connected_socket);
+			return -1;
+		}
+		switch(fork()) {
+			case 0: /* Son */
+				close(listening_socket);
+				process_connection(connected_socket);
+				exit(EXIT_SUCCESS);
+			case -1:
+				syslog(LOG_ERR, "fork: %m");
+				return -1;
+			default: /* Father */
+				close(connected_socket);
+		}
+	} while (run);
+	
+	close(connected_socket);
+	
+	return 0;
+}
+
+void stop_sig_handler(int signo)
+{
+	run = 0;
+}
+
+int install_sig_handler(int signo, int flags)
+{
+	struct sigaction action;
+	
+	action.sa_handler = stop_sig_handler; /* SIG_IGN: ignore, SIG_DFL: default action */
+	sigemptyset(&(action.sa_mask)); /* no signal blocked during execution of signal handler */
+	action.sa_flags = flags; /* SA_RESTART: restart interruptible function after, SA_RESETHAND: restore default after handler execution */
+	
+	if (sigaction(signo, &action, NULL) != 0) { /* NULL : don't need to save old state */
+		syslog(LOG_ERR, "sigaction: %m");
+		syslog(LOG_ERR, "Install signal manager for signal %d (%s) failed\n", signo, sys_siglist[signo]);
+		return -1;
+	} else {
+		return 0;
+	}
+}
+
+int main(int argc, char** argv)
+{
+	int i;
+	
+	/* Daemonisation */
+	if (fork() != 0) exit(EXIT_SUCCESS); /* Go to background */
+	chdir("/"); /* Unblock mount point */
+	setsid(); /* Start new session */
+	if (fork() != 0) exit(EXIT_SUCCESS); /* Fork in new session */
+	for (i = 0; i < OPEN_MAX; i++) close(i); /* Close all file descriptor */
+	
+	/* accept is an exemple of interruptible function, that should not be restarted on SIGQUIT, SIGINT, … */
+	install_sig_handler(SIGQUIT, 0);
+	install_sig_handler(SIGINT, 0);
+	install_sig_handler(SIGTERM, 0);
+	install_sig_handler(SIGIO, SA_RESTART);
+	install_sig_handler(SIGPIPE, SA_RESTART);
+	
+	
+	run = 1;
+	
+	openlog("ROBOTSERV", 0, LOG_USER);
+	syslog(LOG_INFO, "Starting 7robot server …");
+	tcp_server(NULL, "13756");
+	syslog(LOG_INFO, "7robot server closed");
+	closelog();
+	
+	return EXIT_SUCCESS;
+}
+
+//~ void generic_sig_handler(int signo /*, struct siginfo* siginfo, void* context */) /* others arguments are usefull only if SA_SIGINFO is set */
+//~ {
+	//~ fprintf(stdout, "\n%ld received signal %d (%s)\n", (long)getpid(), signo, sys_siglist[signo]);
+	//~ switch(signo) {
+		//~ case SIGQUIT:
+		//~ case SIGINT:
+		//~ case SIGTERM:
+			//~ exit(EXIT_SUCCESS);
+			//~ break;
+		//~ case SIGIO:
+			//~ break;
+		//~ case SIGPIPE:
+			//~ break;
+		//~ default:
+			//~ fprintf(stdout, "Signal no processed\n");
+	//~ }
+//~ }
+
+
+
