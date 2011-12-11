@@ -1,5 +1,0 @@
-Warning[2066] CANm.c 114 : type qualifier mismatch in assignment
-Warning[2054] CANm.c 124 : suspicious pointer conversion
-Warning[2054] CANm.c 133 : suspicious pointer conversion
-Warning[2054] CANm.c 142 : suspicious pointer conversion
-Warning[2054] CANm.c 151 : suspicious pointer conversion

@@ -3,3 +3,4 @@ dist
 .dep.inc
 Makefile-genesis.properties
 *.err
+Info/repeater/var/*
